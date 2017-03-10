@@ -16,6 +16,11 @@
 				"description": "Contains a promise implementation that is partly compatible with Q",
 				"folder": "misc",
 				"url": "${github}/${version}/misc/promise.js"
+			},
+			"services.js": {
+				"description": "Contains a service manager",
+				"folder": "misc",
+				"url": "${github}/${version}/misc/services.js"
 			}
 		},
 		"iterators": {
