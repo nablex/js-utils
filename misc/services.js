@@ -12,8 +12,12 @@ nabu.services.ServiceManager = function(services) {
 		var promises = [];
 		for (var i = 0; i < this.definitions.length; i++) {
 			var instance = new this.definitions[i](self);
-			if (this.definitions[i].name) {
-				self[this.definitions[i].name] = instance;
+			var name = this.definitions[i].name 
+				? this.definitions[i].name.substring(0, 1).toLowerCase() + this.definitions[i].name.substring(1) 
+				: null;
+				
+			if (name) {
+				self[name] = instance;
 			}
 			else {
 				console.warn("Unnamed service", this.definitions[i]);
@@ -24,15 +28,15 @@ nabu.services.ServiceManager = function(services) {
 					// we assume a promise
 					if (result.then) {
 						result.then(function(service) {
-							if (service && this.definitions[i].name) {
-								self[this.definitions[i].name] = service;
+							if (service && name) {
+								self[name] = service;
 							}
 						});
 						promises.push(promise);
 					}
 					// we assume that you returned the actual service instance
-					else if (this.definitions[i].name) {
-						self[this.definitions[i].name] = result;
+					else if (name) {
+						self[.name] = result;
 					}
 				}
 			}
