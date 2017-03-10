@@ -72,10 +72,10 @@ nabu.services.SwaggerClient = function(parameters) {
 		var headers = {};
 		var data = null;
 		for (var i = 0; i < operation.parameters.length; i++) {
-			if (operation.parameters[i].required && !parameters[operation.parameters[i].name]) {
+			if (operation.parameters[i].required && (!parameters || !parameters[operation.parameters[i].name])) {
 				throw "Missing required parameter: " + operation.parameters[i].name;
 			}
-			if (parameters.hasOwnProperty(operation.parameters[i].name)) {
+			if (parameters && parameters.hasOwnProperty(operation.parameters[i].name)) {
 				var value = parameters[operation.parameters[i].name];
 				if (value instanceof Array) {
 					var collectionFormat = operation.parameters[i].collectionFormat ? operation.parameters[i].collectionFormat : "csv";
