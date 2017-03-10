@@ -15,7 +15,19 @@ nabu.services.SwaggerClient = function(parameters) {
 	
 	if (!this.executor) {
 		if (nabu.utils && nabu.utils.ajax) {
-			this.executor = nabu.utils.ajax;
+			this.executor = function(parameters) {
+				var promise = new nabu.utils.promise();
+				nabu.utils.ajax(parameters).then(function(response) {
+					var contentType = response.getResponseHeader("Content-Type");
+					if (contentType && contentType.indexOf("application/json") >= 0) {
+						response = JSON.parse(response.responseText);
+					}
+					promise.resolve(response);
+				}, function(error) {
+					promise.reject(error);
+				});
+				return promise;
+			};
 		}
 		else {
 			throw "No executor";
