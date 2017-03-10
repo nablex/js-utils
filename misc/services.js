@@ -19,13 +19,21 @@ nabu.services.ServiceManager = function(services) {
 				console.warn("Unnamed service", this.definitions[i]);
 			}
 			if (instance.$initialize) {
-				var promise = instance.$initialize().then(function(service) {
-					if (service && this.definitions[i].name) {
-						self[this.definitions[i].name] = service;
+				var result = instance.$initialize();
+				if (result) {
+					// we assume a promise
+					if (result.then) {
+						result.then(function(service) {
+							if (service && this.definitions[i].name) {
+								self[this.definitions[i].name] = service;
+							}
+						});
+						promises.push(promise);
 					}
-				});
-				if (promise) {
-					promises.push(promise);
+					// we assume that you returned the actual service instance
+					else if (this.definitions[i].name) {
+						self[this.definitions[i].name] = result;
+					}
 				}
 			}
 		}
