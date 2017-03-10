@@ -163,7 +163,7 @@ nabu.utils.promises = function(promises) {
 	this.resolver();
 }
 
-nabu.services.q = function() {
+nabu.services.Q = function Q() {
 	this.defer = function() {
 		return new nabu.utils.promise();
 	};

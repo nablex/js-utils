@@ -8,7 +8,7 @@ nabu.services.ServiceManager = function(services) {
 	var self = this;
 	this.definitions = arguments;
 	
-	this.$initialize() = function() {
+	this.$initialize = function() {
 		var promises = [];
 		for (var i = 0; i < this.definitions.length; i++) {
 			var instance = new this.definitions[i](self);
@@ -32,11 +32,11 @@ nabu.services.ServiceManager = function(services) {
 								self[name] = service;
 							}
 						});
-						promises.push(promise);
+						promises.push(result);
 					}
 					// we assume that you returned the actual service instance
 					else if (name) {
-						self[.name] = result;
+						self[name] = result;
 					}
 				}
 			}
