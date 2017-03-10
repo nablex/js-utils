@@ -3,7 +3,8 @@ if (!nabu.services) { nabu.services = {}; }
 
 // construct like this to have a name:
 // var services.User = function User() {
-nabu.services.ServiceManager = function() {
+// if you need custom parameters in your service input, consider a service builder that uses the $initialize.resolve to send back the actual service instance
+nabu.services.ServiceManager = function(services) {
 	var self = this;
 	this.definitions = arguments;
 	
@@ -18,7 +19,11 @@ nabu.services.ServiceManager = function() {
 				console.warn("Unnamed service", this.definitions[i]);
 			}
 			if (instance.$initialize) {
-				var promise = instance.$initialize();
+				var promise = instance.$initialize().then(function(service) {
+					if (service && this.definitions[i].name) {
+						self[this.definitions[i].name] = service;
+					}
+				});
 				if (promise) {
 					promises.push(promise);
 				}
