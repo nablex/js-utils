@@ -125,12 +125,21 @@ nabu.services.Router = function(parameters) {
 		return true;
 	};
 	
-	this.updateUrl = function(alias, url, parameters) {
-		var self = this;
+	this.template = function(alias, parameters) {
+		var route = this.findByAlias(alias, parameters, null, false);
+		return route ? this.templateUrl(route.url, parameters) : null;
+	};
+	
+	this.templateUrl = function(url, parameters) {
 		for (var key in parameters) {
 			url = url.replace(new RegExp("{[\s]*" + key + "[\s]*:[^}]+}"), parameters[key]).replace(new RegExp("{[\s]*" + key + "[\s]*}"), parameters[key]);
 		}
 		url = url.replace(/[\/]{2,}/, "/");
+	};
+	
+	this.updateUrl = function(alias, url, parameters) {
+		var self = this;
+		url = this.templateUrl(url, parameters);
 		if (self.useHash) {
 			self.changingHash = true;
 			window.location.hash = "#" + url;
