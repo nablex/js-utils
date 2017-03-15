@@ -1,0 +1,61 @@
+{
+	"name": "js-utils", 
+	"scopes": {
+		"iterators": {
+			"iterator-static.js": {
+				"folder": "iterators", 
+				"url": "iterators/iterator-static.js"
+			}, 
+			"iterator-window.js": {
+				"folder": "iterators", 
+				"url": "iterators/iterator-window.js"
+			}
+		}, 
+		"utils": {
+			"objects.js": {
+				"folder": "utils", 
+				"url": "utils/objects.js"
+			}, 
+			"staging.js": {
+				"folder": "utils", 
+				"url": "utils/staging.js"
+			}, 
+			"arrays.js": {
+				"folder": "utils", 
+				"url": "utils/arrays.js"
+			}, 
+			"dom.js": {
+				"folder": "utils", 
+				"url": "utils/dom.js"
+			}, 
+			"dates.js": {
+				"folder": "utils", 
+				"url": "utils/dates.js"
+			}
+		}, 
+		"net": {
+			"swagger-client.js": {
+				"folder": "net", 
+				"url": "net/swagger-client.js"
+			}, 
+			"ajax.js": {
+				"folder": "net", 
+				"url": "net/ajax.js"
+			}
+		}, 
+		"misc": {
+			"router.js": {
+				"folder": "misc", 
+				"url": "misc/router.js"
+			}, 
+			"services.js": {
+				"folder": "misc", 
+				"url": "misc/services.js"
+			}, 
+			"promise.js": {
+				"folder": "misc", 
+				"url": "misc/promise.js"
+			}
+		}
+	}
+}
