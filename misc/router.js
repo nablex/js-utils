@@ -135,6 +135,7 @@ nabu.services.Router = function(parameters) {
 			url = url.replace(new RegExp("{[\s]*" + key + "[\s]*:[^}]+}"), parameters[key]).replace(new RegExp("{[\s]*" + key + "[\s]*}"), parameters[key]);
 		}
 		url = url.replace(/[\/]{2,}/, "/");
+		return url;
 	};
 	
 	this.updateUrl = function(alias, url, parameters) {
