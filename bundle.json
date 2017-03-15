@@ -36,25 +36,38 @@
 		"net": {
 			"swagger-client.js": {
 				"folder": "net", 
-				"url": "net/swagger-client.js"
+				"url": "net/swagger-client.js", 
+				"requires": {
+					"ajax.js": {
+						"self": "net"
+					}
+				}
 			}, 
 			"ajax.js": {
 				"folder": "net", 
-				"url": "net/ajax.js"
+				"url": "net/ajax.js", 
+				"requires": {
+					"promise.js": {
+						"self": "misc"
+					}
+				}
 			}
 		}, 
 		"misc": {
 			"router.js": {
 				"folder": "misc", 
-				"url": "misc/router.js"
+				"url": "misc/router.js", 
+				"description": "Contains a generic router"
 			}, 
 			"services.js": {
 				"folder": "misc", 
-				"url": "misc/services.js"
+				"url": "misc/services.js", 
+				"description": "Contains a service manager"
 			}, 
 			"promise.js": {
 				"folder": "misc", 
-				"url": "misc/promise.js"
+				"url": "misc/promise.js", 
+				"description": "Contains a promise implementation that is partly compatible with Q"
 			}
 		}
 	}
