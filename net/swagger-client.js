@@ -24,6 +24,10 @@ nabu.services.SwaggerClient = function(parameters) {
 					}
 					promise.resolve(response);
 				}, function(error) {
+					var contentType = error.getResponseHeader("Content-Type");
+					if (contentType && contentType.indexOf("application/json") >= 0) {
+						error = JSON.parse(error.responseText);
+					}
 					promise.reject(error);
 				});
 				return promise;
@@ -77,6 +81,11 @@ nabu.services.SwaggerClient = function(parameters) {
 			}
 			if (parameters && parameters.hasOwnProperty(operation.parameters[i].name)) {
 				var value = parameters[operation.parameters[i].name];
+				console.log("ORIGINAL", value);
+				if (operation.parameters[i].schema) {
+					value = this.format(operation.parameters[i].schema, value);
+				}
+				console.log("FORMATTED", value);
 				if (value instanceof Array) {
 					var collectionFormat = operation.parameters[i].collectionFormat ? operation.parameters[i].collectionFormat : "csv";
 					// the "multi" collection format is handled by the query part (the only one who currently supports it)
@@ -149,7 +158,89 @@ nabu.services.SwaggerClient = function(parameters) {
 			self.parameters(name, parameters)
 		);
 	};
-
+	
+	this.format = function(definition, value) {
+		if (definition.$ref) {
+			definition = this.definition(definition.$ref);
+		}
+		console.log("definition is", definition);
+		if (definition.type == "string") {
+			// empty strings are interpreted as null
+			if (!value) {
+				return null;
+			}
+			else {
+				return typeof(value) === "string" ? value : new String(value);
+			}
+		}
+		else if (definition.type == "number" || definition.type == "integer") {
+			if (typeof(value) === "number") {
+				return value;
+			}
+			// undefined, empty string,... just return null
+			else if (!value) {
+				return null;
+			}
+			else {
+				var number = new Number(value);
+				if (isNaN(number)) {
+					throw "Not a number: " + value;
+				}
+				return number;
+			}
+		}
+		else if (definition.type == "boolean") {
+			if (typeof(value) === "boolean") {
+				return value;
+			}
+			else {
+				return !!value;
+			}
+		}
+		else if (definition.type == "array") {
+			if (!value) {
+				return null;
+			}
+			else if (!(value instanceof Array)) {
+				value = [value];
+			}
+			var result = [];
+			for (var i = 0; i < value.length; i++) {
+				result.push(this.format(definition.items, value[i]));
+			}
+		}
+		else if (definition.type == "object") {
+			var result = {};
+			if (definition.properties) {
+				for (var key in definition.properties) {
+					var formatted = this.format(definition.properties[key], value[key]);
+					// only set filled in values
+					if (formatted != null) {
+						result[key] = formatted;
+					}
+					else if (definition.required.indexOf(key) >= 0) {
+						throw "Missing required element: " + key;
+					}
+				}
+			}
+			return result;
+		}
+		else {
+			throw "Unsupported type: " + definition.type;
+		}
+	};
+	
+	this.definition = function(ref) {
+		if (ref.indexOf("#/definitions/") == 0) {
+			ref = ref.substring("#/definitions/".length);
+		}
+		var definition = this.swagger.definitions[ref];
+		if (!definition) {
+			throw "Could not find definition: " + ref;
+		}
+		return definition;
+	};
+	
 	return this;
 };
 

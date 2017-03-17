@@ -25,6 +25,24 @@ nabu.utils.stage = function(object, parameters) {
 
 		var shim = [];
 		shim.$original = object;
+		shim.$changed = function() {
+			var changed = (shim.pushed && shim.pushed.length)
+				|| (shim.unshifted && shim.unshifted.length)
+				|| (shim.popped && shim.popped.length)
+				|| (shim.shifted && shim.shifted.length)
+				|| (shim.spliced && shim.spliced.length);
+			// if no changes exist at this level, go deep
+			if (!changed) {
+				for (var i = 0; i < shim.length; i++) {
+					console.log("CHECKING CHANGED FOR", shim[i].$changed, shim[i].$changed());
+					changed = changed || (!!shim[i].$changed && shim[i].$changed());
+					if (changed) {
+						break;
+					} 
+				}
+			}
+			return changed;
+		}
 		var initialize = function() {
 			for (var i = 0; i < object.length; i++) {
 				if (!parameters.shallow && (object[i] instanceof Array || typeof(object[i]) == "object")) {
@@ -90,37 +108,15 @@ nabu.utils.stage = function(object, parameters) {
 			parameters.observer(this);
 		};
 		shim.$commit = function() {
+			// first perform the "add" methods, to have more reference points for splicing
 			if (shim.pushed) {
 				for (var i = 0; i < shim.pushed.length; i++) {
 					object.push(shim.pushed[i]);
 				}
 			}
-			if (shim.popped) {
-				for (var i = 0; i < shim.popped.length; i++) {
-					var index = object.indexOf(shim.popped[i].$original ? shim.popped[i].$original : shim.popped[i]);
-					if (index >= 0) {
-						object.splice(index, 1);
-					}
-					else {
-						console.log("Can not find popped element", shim.shifted[i]);
-					}
-				}
-			}
 			if (shim.unshifted) {
 				for (var i = 0; i < shim.unshifted.length; i++) {
 					object.unshift(shim.unshifted[i]);
-				}
-			}
-			if (shim.shifted) {
-				for (var i = 0; i < shim.shifted.length; i++) {
-					// new elements don't have an $original
-					var index = object.indexOf(shim.shifted[i].$original ? shim.shifted[i].$original : shim.shifted[i]);
-					if (index >= 0) {
-						object.splice(index, 1);
-					}
-					else {
-						console.log("Can not find shifted element", shim.shifted[i]);
-					}
 				}
 			}
 			if (shim.spliced) {
@@ -145,7 +141,30 @@ nabu.utils.stage = function(object, parameters) {
 						}
 					}
 					else {
-						console.log("Can not find splice start poing", shim.spliced[i].starting);
+						console.log("Can not find splice start point", shim.spliced[i].starting);
+					}
+				}
+			}
+			if (shim.popped) {
+				for (var i = 0; i < shim.popped.length; i++) {
+					var index = object.indexOf(shim.popped[i].$original ? shim.popped[i].$original : shim.popped[i]);
+					if (index >= 0) {
+						object.splice(index, 1);
+					}
+					else {
+						console.log("Can not find popped element", shim.shifted[i]);
+					}
+				}
+			}
+			if (shim.shifted) {
+				for (var i = 0; i < shim.shifted.length; i++) {
+					// new elements don't have an $original
+					var index = object.indexOf(shim.shifted[i].$original ? shim.shifted[i].$original : shim.shifted[i]);
+					if (index >= 0) {
+						object.splice(index, 1);
+					}
+					else {
+						console.log("Can not find shifted element", shim.shifted[i]);
 					}
 				}
 			}
@@ -181,6 +200,23 @@ nabu.utils.stage = function(object, parameters) {
 				}
 			}
 		}
+		shim.$changed = function() {
+			var changed = false;
+			for (var key in shim) {
+				if (shim[key].$changed) {
+					changed = shim[key].$changed();
+				}
+				// skip hidden fields for comparison
+				else if (key.substring(0, 1) != "$") {
+					console.log("COMPARING", key, object[key], shim[key]);
+					changed = object[key] != shim[key];
+				}
+				if (changed) {
+					break;
+				}
+			}
+			return changed;
+		}
 		// sync it
 		shim.$rollback();
 		shim.$commit = function() {
@@ -206,3 +242,11 @@ nabu.utils.stage = function(object, parameters) {
 		throw "Can only shim arrays of objects or objects";
 	}
 };
+
+if (Vue && Vue.mixin) {
+	Vue.mixin({
+		computed: {
+			$stage: function() { return nabu.utils.stage }
+		}
+	});
+}
