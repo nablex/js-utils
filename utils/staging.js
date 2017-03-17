@@ -34,7 +34,6 @@ nabu.utils.stage = function(object, parameters) {
 			// if no changes exist at this level, go deep
 			if (!changed) {
 				for (var i = 0; i < shim.length; i++) {
-					console.log("CHECKING CHANGED FOR", shim[i].$changed, shim[i].$changed());
 					changed = changed || (!!shim[i].$changed && shim[i].$changed());
 					if (changed) {
 						break;
@@ -208,7 +207,6 @@ nabu.utils.stage = function(object, parameters) {
 				}
 				// skip hidden fields for comparison
 				else if (key.substring(0, 1) != "$") {
-					console.log("COMPARING", key, object[key], shim[key]);
 					changed = object[key] != shim[key];
 				}
 				if (changed) {

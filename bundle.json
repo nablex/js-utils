@@ -1,6 +1,11 @@
 {
 	"name": "js-utils", 
 	"resources": {
+		"schema": {
+			"json-schema.js": {
+				"url": "schema/json-schema.js"
+			}
+		}, 
 		"iterators": {
 			"iterator-static.js": {
 				"url": "iterators/iterator-static.js"

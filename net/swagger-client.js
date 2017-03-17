@@ -163,71 +163,7 @@ nabu.services.SwaggerClient = function(parameters) {
 		if (definition.$ref) {
 			definition = this.definition(definition.$ref);
 		}
-		console.log("definition is", definition);
-		if (definition.type == "string") {
-			// empty strings are interpreted as null
-			if (!value) {
-				return null;
-			}
-			else {
-				return typeof(value) === "string" ? value : new String(value);
-			}
-		}
-		else if (definition.type == "number" || definition.type == "integer") {
-			if (typeof(value) === "number") {
-				return value;
-			}
-			// undefined, empty string,... just return null
-			else if (!value) {
-				return null;
-			}
-			else {
-				var number = new Number(value);
-				if (isNaN(number)) {
-					throw "Not a number: " + value;
-				}
-				return number;
-			}
-		}
-		else if (definition.type == "boolean") {
-			if (typeof(value) === "boolean") {
-				return value;
-			}
-			else {
-				return !!value;
-			}
-		}
-		else if (definition.type == "array") {
-			if (!value) {
-				return null;
-			}
-			else if (!(value instanceof Array)) {
-				value = [value];
-			}
-			var result = [];
-			for (var i = 0; i < value.length; i++) {
-				result.push(this.format(definition.items, value[i]));
-			}
-		}
-		else if (definition.type == "object") {
-			var result = {};
-			if (definition.properties) {
-				for (var key in definition.properties) {
-					var formatted = this.format(definition.properties[key], value[key]);
-					// only set filled in values
-					if (formatted != null) {
-						result[key] = formatted;
-					}
-					else if (definition.required.indexOf(key) >= 0) {
-						throw "Missing required element: " + key;
-					}
-				}
-			}
-			return result;
-		}
-		else {
-			throw "Unsupported type: " + definition.type;
-		}
+		return nabu.utils.schema.json.format(definition, value);
 	};
 	
 	this.definition = function(ref) {
