@@ -147,53 +147,29 @@ nabu.utils.schema.json.validate = function(definition, value, required) {
 			});
 		}
 	}
-	var maximum = function(value, maximum) {
-		if (typeof(maximum) !== "undefined" && value > maximum) {
+	var maximum = function(value, maximum, exclusiveMaximum) {
+		if (typeof(maximum) !== "undefined" && ( (exclusiveMaximum && value >= maximum) || (!exclusiveMaximum && value > maximum) )) {
 			messages.push({
 				severity: "error",
 				code: "maximum",
 				values: {
 					actual: value,
-					expected: maximum
+					expected: maximum,
+					exclusive: !!exclusiveMaximum
 				},
 				context: []
 			});
 		}
 	}
-	var exclusiveMaximum = function(value, exclusiveMaximum) {
-		if (typeof(maximum) !== "undefined" && value >= exclusiveMaximum) {
-			messages.push({
-				severity: "error",
-				code: "exclusiveMaximum",
-				values: {
-					actual: value,
-					expected: exclusiveMaximum
-				},
-				context: []
-			});
-		}
-	}
-	var minimum = function(value, minimum) {
-		if (typeof(minimum) !== "undefined" && value < minimum) {
+	var minimum = function(value, minimum, exclusiveMinimum) {
+		if (typeof(minimum) !== "undefined" && ( (exclusiveMinimum && value <= minimum) || (!exclusiveMinimum && value < minimum) )) {
 			messages.push({
 				severity: "error",
 				code: "minimum",
 				values: {
 					actual: value,
-					expected: minimum
-				},
-				context: []
-			});
-		}
-	}
-	var exclusiveMinimum = function(value, exclusiveMinimum) {
-		if (typeof(minimum) !== "undefined" && value <= exclusiveMinimum) {
-			messages.push({
-				severity: "error",
-				code: "exclusiveMinimum",
-				values: {
-					actual: value,
-					expected: exclusiveMinimum
+					expected: minimum,
+					exclusive: !!exclusiveMinimum
 				},
 				context: []
 			});
@@ -270,10 +246,8 @@ nabu.utils.schema.json.validate = function(definition, value, required) {
 			}
 		}
 		if (result != null) {
-			maximum(value, definition.maximum);
-			exclusiveMaximum(value, definition.exclusiveMaximum);
-			minimum(value, definition.minimum);
-			exclusiveMinimum(value, definition.exclusiveMinimum);
+			maximum(value, definition.maximum, definition.exclusiveMaximum);
+			minimum(value, definition.minimum, definition.exclusiveMinimum);
 		}
 		else {
 			missing();

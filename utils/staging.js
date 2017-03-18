@@ -64,14 +64,20 @@ nabu.utils.stage = function(object, parameters) {
 			shim.push = function() {
 				shim.pushed.push.apply(shim.pushed, arguments);
 				oldPush.apply(shim, arguments);
-				parameters.observer(this);
+				if (shim.__ob__) {
+					shim.__ob__.observeArray(arguments);
+				}
+				parameters.observer(shim);
 			};
 			// wrap the unshift
 			var oldUnshift = shim.unshift;
 			shim.unshift = function() {
 				shim.unshifted.push.apply(shim.unshifted, arguments);
 				oldUnshift.apply(shim, arguments);
-				parameters.observer(this);
+				if (shim.__ob__) {
+					shim.__ob__.observeArray(arguments);
+				}
+				parameters.observer(shim);
 			};
 		}
 		if (parameters.removed) {
@@ -104,6 +110,9 @@ nabu.utils.stage = function(object, parameters) {
 				added: args,
 				removed: oldSplice.apply(shim, arguments)
 			});
+			if (args.length && shim.__ob__) {
+				shim.__ob__.observeArray(arguments);
+			}
 			parameters.observer(this);
 		};
 		shim.$commit = function() {
