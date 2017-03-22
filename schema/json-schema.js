@@ -308,9 +308,5 @@ nabu.utils.schema.json.validate = function(definition, value, required) {
 			}
 		}
 	}
-	// it's the first if
-	else if (definition.type != "string") {
-		throw "Unsupported type: " + definition.type;
-	}
 	return messages;
 };
