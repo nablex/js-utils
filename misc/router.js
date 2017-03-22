@@ -274,9 +274,12 @@ nabu.services.Router = function(parameters) {
 					self.updateUrl(alternativeRoute.alias, alternativeRoute.url, parameters);
 				}
 			}
-			self.current.route.enter(anchor, self.current.parameters, null, null);
+			var enterReturn = self.current.route.enter(anchor, self.current.parameters, null, null);
+			if (self.enter != null) {
+				self.enter(anchor, self.current.route, self.current.parameters, null, null, enterReturn);
+			}
 		}
-		return this;
+		return self.current.route;
 	};
 	
 	this.findByAlias = function(alias, parameters, anchor, initial) {

@@ -22,6 +22,10 @@ nabu.utils.stage = function(object, parameters) {
 		if (typeof(parameters.removed) == "undefined") {
 			parameters.removed = true;
 		}
+		// default merge removed
+		if (typeof(parameters.spliced) == "undefined") {
+			parameters.spliced = true;
+		}
 
 		var shim = [];
 		shim.$original = object;
@@ -97,24 +101,41 @@ nabu.utils.stage = function(object, parameters) {
 				parameters.observer(this);
 			};
 		}
-		// splice is slightly tricker so use with caution
-		var oldSplice = shim.splice;
-		shim.oldSplice = oldSplice;
-		shim.splice = function(index, length) {
-			var args = [];
-			for (var i = 2; i < arguments.length; i++) {
-				args.push(arguments[i]);
+		if (parameters.spliced) {
+			// splice is slightly tricker so use with caution
+			var oldSplice = shim.splice;
+			shim.oldSplice = oldSplice;
+			shim.splice = function(index, length) {
+				var args = [];
+				for (var i = 2; i < arguments.length; i++) {
+					args.push(arguments[i]);
+				}
+				shim.spliced.push({
+					starting: shim[index],
+					added: args,
+					removed: oldSplice.apply(shim, arguments)
+				});
+				if (args.length && shim.__ob__) {
+					shim.__ob__.observeArray(arguments);
+				}
+				parameters.observer(this);
+			};
+		}
+		else {
+			var oldSplice = shim.splice;
+			shim.splice = function(index, length) {
+				var removed = oldSplice.apply(shim, arguments);
+				for (var i = 0; i < removed.length; i++) {
+					var index = object.indexOf(removed[i].$original ? removed[i].$original : removed[i]);
+					if (index >= 0) {
+						oldSplice.apply(object, [index, 1]);
+					}
+				}
 			}
-			shim.spliced.push({
-				starting: shim[index],
-				added: args,
-				removed: oldSplice.apply(shim, arguments)
-			});
-			if (args.length && shim.__ob__) {
-				shim.__ob__.observeArray(arguments);
+			shim.spliceSuperficial = function(index, length) {
+				oldSplice.apply(shim, arguments);
 			}
-			parameters.observer(this);
-		};
+		}
 		shim.$commit = function() {
 			// first perform the "add" methods, to have more reference points for splicing
 			if (shim.pushed) {
@@ -187,7 +208,12 @@ nabu.utils.stage = function(object, parameters) {
 		};
 		shim.$rollback = function() {
 			// reset elements
-			shim.splice(0, shim.length);
+			if (shim.spliceSuperficial) {
+				shim.spliceSuperficial(0, shim.length);
+			}
+			else {
+				shim.splice(0, shim.length);
+			}
 			// reinitialize
 			initialize();
 		};
@@ -211,7 +237,7 @@ nabu.utils.stage = function(object, parameters) {
 		shim.$changed = function() {
 			var changed = false;
 			for (var key in shim) {
-				if (shim[key].$changed) {
+				if (shim[key] && shim[key].$changed) {
 					changed = shim[key].$changed();
 				}
 				// skip hidden fields for comparison

@@ -82,7 +82,7 @@ nabu.utils.schema.json.validate = function(definition, value, required) {
 	}
 	
 	var messages = [];
-	
+
 	var missing = function() {
 		if (required) {
 			messages.push({
@@ -96,6 +96,14 @@ nabu.utils.schema.json.validate = function(definition, value, required) {
 			});
 		}
 	}
+	
+	if (!definition) {
+		if (required && (typeof(value) == "undefined" || value == null || value == "")) {
+			missing();
+		}
+		return messages;
+	}
+	
 	// indicates that it could not be parsed as the given data type
 	var type = function(type) {
 		messages.push({

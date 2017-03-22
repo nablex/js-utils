@@ -81,11 +81,9 @@ nabu.services.SwaggerClient = function(parameters) {
 			}
 			if (parameters && parameters.hasOwnProperty(operation.parameters[i].name)) {
 				var value = parameters[operation.parameters[i].name];
-				console.log("ORIGINAL", value);
 				if (operation.parameters[i].schema) {
 					value = this.format(operation.parameters[i].schema, value);
 				}
-				console.log("FORMATTED", value);
 				if (value instanceof Array) {
 					var collectionFormat = operation.parameters[i].collectionFormat ? operation.parameters[i].collectionFormat : "csv";
 					// the "multi" collection format is handled by the query part (the only one who currently supports it)
