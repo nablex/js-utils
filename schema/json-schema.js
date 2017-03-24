@@ -5,9 +5,14 @@ if (!nabu.utils.schema.json) { nabu.utils.schema.json = {} }
 
 // formats a value according to the definition
 // will throw an exception if the value is not valid according to the schema
-nabu.utils.schema.json.format = function(definition, value) {
+nabu.utils.schema.json.format = function(definition, value, resolver) {
 	if (definition.$ref) {
-		definition = this.definition(definition.$ref);
+		if (resolver) {
+			definition = resolver(definition.$ref);
+		}
+		else {
+			throw "Can not normalize value because definition has a reference in it and no resolver is provided";
+		}
 	}
 	if (definition.type == "string") {
 		// empty strings are interpreted as null
@@ -75,8 +80,77 @@ nabu.utils.schema.json.format = function(definition, value) {
 	}
 };
 
+nabu.utils.schema.json.normalize = function(definition, value, resolver) {
+	if (definition.$ref) {
+		if (resolver) {
+			definition = resolver(definition.$ref);
+		}
+		else {
+			throw "Can not normalize value because definition has a reference in it and no resolver is provided";
+		}
+	}
+	if (typeof(value) == "undefined") {
+		return nabu.utils.schema.json.instance(definition, resolver);
+	}
+	else if (definition.type == "object") {
+		if (definition.properties) {
+			for (key in definition.properties) {
+				if (typeof(value[key]) == "undefined") {
+					value[key] = nabu.utils.schema.json.instance(definition.properties[key], resolver);
+				}
+				else {
+					value[key] = nabu.utils.schema.json.normalize(definition.properties[key], value[key], resolver);
+				}
+			}
+		}
+	}
+	else if (definition.type == "array") {
+		if (!(value instanceof Array)) {
+			value = [value];
+		}
+		for (var i = 0; i < value.length; i++) {
+			if (value[i] && definition.items) {
+				value[i] = nabu.utils.schema.json.normalize(definition.items, value[i], resolver);
+			}
+		}
+	}
+	else if (value === "") {
+		value = null;
+	}
+	return value;
+}
+
+nabu.utils.schema.json.instance = function(definition, resolver) {
+	if (definition.$ref) {
+		if (resolver) {
+			definition = resolver(definition.$ref);
+		}
+		else {
+			throw "Can not normalize value because definition has a reference in it and no resolver is provided";
+		}
+	}
+	if (definition.type == "array") {
+		return [];
+	}
+	else if (definition.type == "object") {
+		return nabu.utils.schema.json.normalize(definition, {});
+	}
+	else {
+		return null;
+	}
+}
+
 // will validate a value by a schema definition
-nabu.utils.schema.json.validate = function(definition, value, required) {
+nabu.utils.schema.json.validate = function(definition, value, required, resolver) {
+	if (definition.$ref) {
+		if (resolver) {
+			definition = resolver(definition.$ref);
+		}
+		else {
+			throw "Can not normalize value because definition has a reference in it and no resolver is provided";
+		}
+	}
+	
 	if (typeof(value) == "undefined") {
 		value = null;
 	}
@@ -227,7 +301,7 @@ nabu.utils.schema.json.validate = function(definition, value, required) {
 	enumeration(value, definition["enum"]);
 	
 	// the string checks can be done on all of these
-	if (definition.type == "string" || definition.type == "number" || definition.type == "integer") {
+	if (definition.type == "string" || definition.type == "number" || definition.type == "integer" || !definition.type) {
 		// empty strings are interpreted as null
 		if (!value) {
 			missing();

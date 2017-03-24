@@ -21,6 +21,9 @@ nabu.services.SwaggerClient = function(parameters) {
 					var contentType = response.getResponseHeader("Content-Type");
 					if (contentType && contentType.indexOf("application/json") >= 0) {
 						response = JSON.parse(response.responseText);
+						if (parameters.definition) {
+							response = nabu.utils.schema.json.normalize(parameters.definition, response, self.definition.bind(self));
+						}
 					}
 					promise.resolve(response);
 				}, function(error) {
@@ -142,12 +145,18 @@ nabu.services.SwaggerClient = function(parameters) {
 				path += key + "=" + query[key];
 			}
 		});
+		
+		var definition = operation.responses && operation.responses[200] ? operation.responses[200].schema : null;
+		if (definition && definition.$ref) {
+			definition = this.definition(definition.$ref);
+		}
 		return {
 			method: operation.method,
 			host: self.host,
 			url: path,
 			data: data,
-			headers: headers
+			headers: headers,
+			definition: definition
 		};
 	};
 	
