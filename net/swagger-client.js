@@ -170,7 +170,7 @@ nabu.services.SwaggerClient = function(parameters) {
 		if (definition.$ref) {
 			definition = this.definition(definition.$ref);
 		}
-		return nabu.utils.schema.json.format(definition, value);
+		return nabu.utils.schema.json.format(definition, value, self.definition.bind(self));
 	};
 	
 	this.definition = function(ref) {

@@ -42,5 +42,50 @@ nabu.utils.elements = {
 		while(element.firstChild) {
 			element.removeChild(element.firstChild);
 		}
+	},
+	clean: function(element, allowedTags, tagsToRemove) {
+		var returnAsString = false;
+		if (typeof(element) == "string") {
+			returnAsString = true;
+			var div = document.createElement("div");
+			div.innerHTML = element;
+			element = div;
+		}
+	
+		var removeAttributes = function (element) {
+			for( var i = element.attributes.length - 1; i >= 0; i-- ) {
+				element.removeAttribute(element.attributes[i].name);
+			}
+		};
+
+		var recursiveStrip = function (element) {
+			removeAttributes(element);
+			for (var i = element.childNodes.length - 1; i >= 0; i--) {
+				if (element.childNodes[i].nodeType == 1) {
+					if (tagsToRemove.indexOf(element.childNodes[i].nodeName.toLowerCase()) >= 0) {
+						element.removeChild(element.childNodes[i]);
+					}
+					else {
+						recursiveStrip(element.childNodes[i]);
+						if (allowedTags.indexOf(element.childNodes[i].nodeName.toLowerCase()) < 0) {
+							var child = element.childNodes[i];
+							var insertRef = child;
+							for (var j = child.childNodes.length - 1; j >= 0; j--) {
+								insertRef = element.insertBefore(child.childNodes[j], insertRef);
+							}
+							element.removeChild(child);
+						}
+						else if (element.childNodes[i].innerHTML.trim() == "") {
+							element.removeChild(element.childNodes[i]);
+						}
+					}
+				}
+			}
+		}
+
+		var template = document.createElement("div");
+		template.appendChild(element);
+		recursiveStrip(template);
+		return returnAsString ? template.innerHTML : template;
 	}
 };
