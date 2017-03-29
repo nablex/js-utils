@@ -84,7 +84,7 @@ nabu.services.SwaggerClient = function(parameters) {
 			}
 			if (parameters && parameters.hasOwnProperty(operation.parameters[i].name)) {
 				var value = parameters[operation.parameters[i].name];
-				if (operation.parameters[i].schema) {
+				if (operation.parameters[i].schema && !(value instanceof File)) {
 					value = this.format(operation.parameters[i].schema, value);
 				}
 				if (value instanceof Array) {

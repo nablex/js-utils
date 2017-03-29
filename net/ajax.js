@@ -221,6 +221,9 @@ nabu.utils.ajax = function(parameters) {
 					else if (parameters.data.name.match(/.*\.jpg/i) || parameters.data.name.match(/.*\.jpeg/i)) {
 						parameters.contentType = "image/jpeg";
 					}
+					else if (parameters.data.type) {
+						parameters.contentType = parameters.data.type;
+					}
 				}
 			}
 			if (!parameters.contentType) {

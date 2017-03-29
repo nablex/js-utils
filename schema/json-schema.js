@@ -11,7 +11,7 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 			definition = resolver(definition.$ref);
 		}
 		else {
-			throw "Can not normalize value because definition has a reference in it and no resolver is provided";
+			throw "Can not format value because definition has a reference in it and no resolver is provided";
 		}
 	}
 	if (definition.type == "string") {
@@ -56,19 +56,20 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 		}
 		var result = [];
 		for (var i = 0; i < value.length; i++) {
-			result.push(nabu.utils.schema.json.format(definition.items, value[i]));
+			result.push(nabu.utils.schema.json.format(definition.items, value[i], resolver));
 		}
+		return result;
 	}
 	else if (definition.type == "object") {
 		var result = {};
 		if (definition.properties) {
 			for (var key in definition.properties) {
-				var formatted = nabu.utils.schema.json.format(definition.properties[key], value[key]);
+				var formatted = nabu.utils.schema.json.format(definition.properties[key], value[key], resolver);
 				// only set filled in values
 				if (formatted != null) {
 					result[key] = formatted;
 				}
-				else if (definition.required.indexOf(key) >= 0) {
+				else if (definition.required && definition.required.indexOf(key) >= 0) {
 					throw "Missing required element: " + key;
 				}
 			}
@@ -133,7 +134,7 @@ nabu.utils.schema.json.instance = function(definition, resolver) {
 		return [];
 	}
 	else if (definition.type == "object") {
-		return nabu.utils.schema.json.normalize(definition, {});
+		return nabu.utils.schema.json.normalize(definition, {}, resolver);
 	}
 	else {
 		return null;

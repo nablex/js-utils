@@ -49,7 +49,7 @@ nabu.utils.stage = function(object, parameters) {
 		var initialize = function() {
 			for (var i = 0; i < object.length; i++) {
 				if (!parameters.shallow && (object[i] instanceof Array || typeof(object[i]) == "object")) {
-					shim.push(nabu.utils.stage(object[i]));
+					shim.push(nabu.utils.stage(object[i], parameters));
 				}
 				else {
 					shim.push(object[i]);
@@ -225,9 +225,10 @@ nabu.utils.stage = function(object, parameters) {
 		shim.$original = object;
 		shim.$rollback = function() {
 			for (var key in object) {
+				var ignoreField = parameters.ignoreFields && parameters.ignoreFields.indexOf(key) >= 0;
 				// recursively shim
-				if (object[key] != null && (object[key] instanceof Array || typeof(object[key]) == "object")) {
-					shim[key] = nabu.utils.stage(object[key]);
+				if (!ignoreField && object[key] != null && (object[key] instanceof Array || typeof(object[key]) == "object")) {
+					shim[key] = nabu.utils.stage(object[key], parameters);
 				}
 				else {
 					shim[key] = object[key];
@@ -259,7 +260,7 @@ nabu.utils.stage = function(object, parameters) {
 				if (key.substring(0, 1) == "$") {
 					continue;
 				}
-				if (shim[key] != null && (shim[key] instanceof Array || typeof(shim[key]) == "object")) {
+				if (shim[key] != null && shim[key].$commit && (shim[key] instanceof Array || typeof(shim[key]) == "object")) {
 					shim[key].$commit();
 				}
 				else {
