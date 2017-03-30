@@ -14,6 +14,11 @@
 				"url": "iterators/iterator-window.js"
 			}
 		}, 
+		"polyfill": {
+			"function.js": {
+				"url": "polyfill/function.js"
+			}
+		}, 
 		"utils": {
 			"objects.js": {
 				"url": "utils/objects.js"
