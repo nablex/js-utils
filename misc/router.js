@@ -157,6 +157,11 @@ nabu.services.Router = function(parameters) {
 		}
 		var chosenRoute = null;
 		var parameters = {};
+		var queryIndex = path.indexOf("?");
+		var queryParameters = queryIndex >= 0 ? path.substring(queryIndex) : window.location.search;
+		if (queryIndex >= 0) {
+			path = path.substring(0, queryIndex);
+		}
 		for (var i = 0; i < self.routes.length; i++) {
 			if (self.routes[i].url && ((!initial && !self.routes[i].initial) || (initial && self.routes[i].initial))) {
 				var template = "^" + self.routes[i].url.replace(/\{[\s]*[^}:]+[\s]*:[\s]*([^}]+)[\s]*\}/g, "($1)").replace(/\{[\s]*[^}]+[\s]*\}/g, "([^/]+)") + "$";
@@ -175,7 +180,7 @@ nabu.services.Router = function(parameters) {
 					}
 					chosenRoute = self.routes[i];
 					if (chosenRoute.query) {
-						var parts = window.location.search.substring(1).split("&");
+						var parts = queryParameters.substring(1).split("&");
 						for (var i = 0; i < parts.length; i++) {
 							var values = parts[i].split("=");
 							if (chosenRoute.query.indexOf(values[0]) >= 0) {

@@ -25,6 +25,9 @@ nabu.services.SwaggerClient = function(parameters) {
 							response = nabu.utils.schema.json.normalize(parameters.definition, response, self.definition.bind(self));
 						}
 					}
+					else if (contentType && contentType.indexOf("text/html") >= 0) {
+						response = response.responseText;
+					}
 					promise.resolve(response);
 				}, function(error) {
 					var contentType = error.getResponseHeader("Content-Type");
@@ -116,7 +119,7 @@ nabu.services.SwaggerClient = function(parameters) {
 					}
 				}
 				if (operation.parameters[i].in == "path") {
-					path = path.replace(new RegExp("\{[\\s]*" + operation.parameters[i].name + "[\\s]*\}"), value);
+					path = path.replace(new RegExp("\{[\\s]*" + operation.parameters[i].name + "[^}]*\}"), value);
 				}
 				else if (operation.parameters[i].in == "query") {
 					query[operation.parameters[i].name] = value;
