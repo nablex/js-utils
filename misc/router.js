@@ -120,27 +120,43 @@ nabu.services.Router = function(parameters) {
 		};
 		// update the current URL if the state has a URL attached to it
 		if (chosenRoute.url && !mask) {
-			self.updateUrl(chosenRoute.alias, chosenRoute.url, parameters);
+			self.updateUrl(chosenRoute.alias, chosenRoute.url, parameters, chosenRoute.query);
 		}
 		return true;
 	};
 	
 	this.template = function(alias, parameters) {
 		var route = this.findByAlias(alias, parameters, null, false);
-		return route ? this.templateUrl(route.url, parameters) : null;
+		return route ? this.templateUrl(route.url, parameters, route.query) : null;
 	};
 	
-	this.templateUrl = function(url, parameters) {
+	this.templateUrl = function(url, parameters, query) {
 		for (var key in parameters) {
 			url = url.replace(new RegExp("{[\s]*" + key + "[\s]*:[^}]+}"), parameters[key]).replace(new RegExp("{[\s]*" + key + "[\s]*}"), parameters[key]);
 		}
 		url = url.replace(/[\/]{2,}/, "/");
+		if (query && parameters) {
+			var first = true;
+			for (var i = 0; i < query.length; i++) {
+				var value = parameters[query[i]];
+				if (typeof(value) != "undefined" && value != null) {
+					if (first) {
+						url += "?";
+						first = false;
+					}
+					else {
+						url += "&";
+					}
+					url += query[i] + "=" + parameters[query[i]];
+				}
+			}
+		}
 		return url;
 	};
 	
-	this.updateUrl = function(alias, url, parameters) {
+	this.updateUrl = function(alias, url, parameters, query) {
 		var self = this;
-		url = this.templateUrl(url, parameters);
+		url = this.templateUrl(url, parameters, query);
 		if (self.useHash) {
 			self.changingHash = true;
 			window.location.hash = "#" + url;

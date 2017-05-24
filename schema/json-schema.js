@@ -15,6 +15,12 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 		}
 	}
 	if (definition.type == "string") {
+		if (definition.format == "date" && value instanceof Date) {
+			return value.toISOString().substring(0, 10);
+		}
+		else if (definition.format == "date-time" && value instanceof Date) {
+			return value.toISOString();
+		}
 		// empty strings are interpreted as null
 		if (!value) {
 			return null;
@@ -81,7 +87,7 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 	}
 };
 
-nabu.utils.schema.json.normalize = function(definition, value, resolver) {
+nabu.utils.schema.json.normalize = function(definition, value, resolver, createNew, recursivelyCreateNew) {
 	if (definition.$ref) {
 		if (resolver) {
 			definition = resolver(definition.$ref);
@@ -91,7 +97,12 @@ nabu.utils.schema.json.normalize = function(definition, value, resolver) {
 		}
 	}
 	if (typeof(value) == "undefined") {
-		return nabu.utils.schema.json.instance(definition, resolver);
+		if (createNew) {
+			return nabu.utils.schema.json.instance(definition, resolver);
+		}
+		else {
+			return null;
+		}
 	}
 	else if (definition.type == "object") {
 		if (definition.properties) {
@@ -100,7 +111,7 @@ nabu.utils.schema.json.normalize = function(definition, value, resolver) {
 					value[key] = nabu.utils.schema.json.instance(definition.properties[key], resolver);
 				}
 				else {
-					value[key] = nabu.utils.schema.json.normalize(definition.properties[key], value[key], resolver);
+					value[key] = nabu.utils.schema.json.normalize(definition.properties[key], value[key], resolver, recursivelyCreateNew, recursivelyCreateNew);
 				}
 			}
 		}
@@ -111,12 +122,15 @@ nabu.utils.schema.json.normalize = function(definition, value, resolver) {
 		}
 		for (var i = 0; i < value.length; i++) {
 			if (value[i] && definition.items) {
-				value[i] = nabu.utils.schema.json.normalize(definition.items, value[i], resolver);
+				value[i] = nabu.utils.schema.json.normalize(definition.items, value[i], resolver, recursivelyCreateNew, recursivelyCreateNew);
 			}
 		}
 	}
 	else if (value === "") {
 		value = null;
+	}
+	else if (value && definition.type == "string" && (definition.format == "date" || definition.format == "date-time")) {
+		value = new Date(value);
 	}
 	return value;
 }

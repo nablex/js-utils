@@ -48,7 +48,7 @@ nabu.utils.stage = function(object, parameters) {
 		}
 		var initialize = function() {
 			for (var i = 0; i < object.length; i++) {
-				if (!parameters.shallow && (object[i] instanceof Array || typeof(object[i]) == "object")) {
+				if (!parameters.shallow && (object[i] instanceof Array || typeof(object[i]) == "object") && !(object[i] instanceof Date)) {
 					shim.push(nabu.utils.stage(object[i], parameters));
 				}
 				else {
@@ -101,6 +101,35 @@ nabu.utils.stage = function(object, parameters) {
 				parameters.observer(this);
 			};
 		}
+		// if we are not staging the removal but we are staging the adding, it is possible something is added and removed in the staging area
+		// but later applied because the added is still being done
+		else if (parameters.added) {
+			var oldPop = shim.pop;
+			shim.pop = function() {
+				var popped = oldPop.apply(shim);
+				var stageIndex = shim.pushed.indexOf(popped);
+				if (stageIndex >= 0) {
+					shim.pushed.splice(stageIndex, 1);
+				}
+				stageIndex = shim.unshifted.indexOf(popped);
+				if (stageIndex >= 0) {
+					shim.unshifted.splice(stageIndex, 1);
+				}
+			};
+			// wrap the shift
+			var oldShift = shim.shift;
+			shim.shift = function() {
+				var shifted = oldShift.apply(shim);
+				var stageIndex = shim.pushed.indexOf(shifted);
+				if (stageIndex >= 0) {
+					shim.pushed.splice(stageIndex, 1);
+				}
+				stageIndex = shim.unshifted.indexOf(shifted);
+				if (stageIndex >= 0) {
+					shim.unshifted.splice(stageIndex, 1);
+				}
+			};
+		}
 		if (parameters.spliced) {
 			// splice is slightly tricker so use with caution
 			var oldSplice = shim.splice;
@@ -128,9 +157,27 @@ nabu.utils.stage = function(object, parameters) {
 				for (var i = 0; i < removed.length; i++) {
 					var index = object.indexOf(removed[i].$original ? removed[i].$original : removed[i]);
 					if (index >= 0) {
-						oldSplice.apply(object, [index, 1]);
+						object.splice(index, 1);
+					}
+					// remove from staging if necessary
+					var stageIndex = shim.pushed.indexOf(removed[i]);
+					if (stageIndex >= 0) {
+						shim.pushed.splice(stageIndex, 1);
+					}
+					stageIndex = shim.unshifted.indexOf(removed[i]);
+					if (stageIndex >= 0) {
+						shim.unshifted.splice(stageIndex, 1);
 					}
 				}
+				var args = [];
+				for (var i = 2; i < arguments.length; i++) {
+					args.push(arguments[i]);
+				}
+				if (args.length && shim.__ob__) {
+					shim.__ob__.observeArray(arguments);
+				}
+				parameters.observer(this);
+				return removed;
 			}
 			shim.spliceSuperficial = function(index, length) {
 				oldSplice.apply(shim, arguments);
@@ -219,7 +266,7 @@ nabu.utils.stage = function(object, parameters) {
 		};
 		return shim;
 	}
-	else if (typeof(object) == "object") {
+	else if (typeof(object) == "object" && !(object instanceof Date)) {
 		// create a new object to hold updates
 		var shim = {};
 		shim.$original = object;
@@ -227,7 +274,7 @@ nabu.utils.stage = function(object, parameters) {
 			for (var key in object) {
 				var ignoreField = parameters.ignoreFields && parameters.ignoreFields.indexOf(key) >= 0;
 				// recursively shim
-				if (!ignoreField && object[key] != null && (object[key] instanceof Array || typeof(object[key]) == "object")) {
+				if (!ignoreField && object[key] != null && (object[key] instanceof Array || typeof(object[key]) == "object") && !(object[key] instanceof Date)) {
 					shim[key] = nabu.utils.stage(object[key], parameters);
 				}
 				else {

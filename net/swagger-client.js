@@ -10,8 +10,12 @@ nabu.services.SwaggerClient = function(parameters) {
 	this.swagger = typeof(parameters.definition) == "string" ? JSON.parse(parameters.definition) : parameters.definition;
 	this.operations = {};
 	this.secure = this.swagger.schemes.indexOf("https") >= 0;
-	this.host = (this.secure ? "https://" : "http://") + this.swagger.host;
+	this.host = this.swagger.host && parameters.useHost ? (this.secure ? "https://" : "http://") + this.swagger.host : null;
 	this.executor = parameters.executor;
+	this.normalize = parameters.normalize;
+	this.parseError = parameters.parseError;
+	this.rememberHandler = parameters.remember;
+	this.remembering = false;
 	
 	if (!this.executor) {
 		if (nabu.utils && nabu.utils.ajax) {
@@ -22,7 +26,7 @@ nabu.services.SwaggerClient = function(parameters) {
 					if (contentType && contentType.indexOf("application/json") >= 0) {
 						response = JSON.parse(response.responseText);
 						if (parameters.definition) {
-							response = nabu.utils.schema.json.normalize(parameters.definition, response, self.definition.bind(self));
+							response = nabu.utils.schema.json.normalize(parameters.definition, response, self.definition.bind(self), true, self.normalize);
 						}
 					}
 					else if (contentType && contentType.indexOf("text/html") >= 0) {
@@ -30,11 +34,35 @@ nabu.services.SwaggerClient = function(parameters) {
 					}
 					promise.resolve(response);
 				}, function(error) {
-					var contentType = error.getResponseHeader("Content-Type");
-					if (contentType && contentType.indexOf("application/json") >= 0) {
-						error = JSON.parse(error.responseText);
+					var requireAuthentication = error.status == 401;
+					if (self.parseError) {
+						var contentType = error.getResponseHeader("Content-Type");
+						if (contentType && contentType.indexOf("application/json") >= 0) {
+							error = JSON.parse(error.responseText);
+						}
 					}
-					promise.reject(error);
+					if (requireAuthentication && !parameters.remember && self.rememberHandler && !self.remembering) {
+						self.remembering = true;
+						self.rememberHandler().then(
+							function() {
+								self.remembering = false;
+								parameters.remember = true;
+								self.executor(parameters).then(
+									function(response) {
+										promise.resolve(response);
+									},
+									function(error) {
+										promise.reject(error);
+									});
+							},
+							function() {
+								self.remembering = false;
+								promise.reject(error);
+							});
+					}
+					else {
+						promise.reject(error);
+					}
 				});
 				return promise;
 			};
@@ -43,23 +71,42 @@ nabu.services.SwaggerClient = function(parameters) {
 			throw "No executor";
 		}
 	}
+	
+	this.remember = function() {
+		if (self.rememberHandler) {
+			self.remembering = true;
+			return self.rememberHandler().then(
+				function() {
+					self.remembering = false;
+				},
+				function() {
+					self.remembering = false;
+				}
+			);
+		}
+		else {
+			throw "Remember not supported";
+		}
+	}
 
 	if (this.swagger.swagger != "2.0") {
 		throw "Only swagger 2.0 is currently supported";	
 	}
 
-	Object.keys(self.swagger.paths).forEach(function (path) {
-		Object.keys(self.swagger.paths[path]).forEach(function (method) {
-			var operation = self.swagger.paths[path][method];
-			self.operations[operation.operationId] = {
-				id: operation.operationId,
-				parameters: operation.parameters,
-				path: path,
-				method: method,
-				responses: operation.responses
-			}
+	if (self.swagger && self.swagger.paths) {
+		Object.keys(self.swagger.paths).forEach(function (path) {
+			Object.keys(self.swagger.paths[path]).forEach(function (method) {
+				var operation = self.swagger.paths[path][method];
+				self.operations[operation.operationId] = {
+					id: operation.operationId,
+					parameters: operation.parameters,
+					path: path,
+					method: method,
+					responses: operation.responses
+				}
+			});
 		});
-	});
+	}
 	
 	this.operation = function(name) {
 		return self.operations[name];
