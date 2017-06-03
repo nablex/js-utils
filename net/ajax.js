@@ -97,7 +97,7 @@ nabu.utils.ajax = function(parameters) {
 	if (parameters.parameters) {
 		var tmp = "";
 		for (var key in parameters.parameters) {
-			tmp += (tmp == "" ? "" : "&") + key + "=" + encodeURIComponent(parameters.parameters[key]);
+			tmp += (tmp == "" ? "" : "&") + encodeURIComponent(key) + "=" + encodeURIComponent(parameters.parameters[key]);
 		}
 		// if it's a get or something else with data attached, append them to
 		// the url, this assumes no "?"

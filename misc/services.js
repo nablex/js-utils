@@ -6,21 +6,21 @@ if (!nabu.services) { nabu.services = {}; }
 // if you need custom parameters in your service input, consider a service builder that uses the $initialize.resolve to send back the actual service instance
 nabu.services.ServiceManager = function(services) {
 	var self = this;
-	this.definitions = arguments;
+	this.$definitions = arguments;
 	
 	this.$initialize = function() {
 		var promises = [];
-		for (var i = 0; i < this.definitions.length; i++) {
-			var instance = new this.definitions[i](self);
-			var name = this.definitions[i].name 
-				? this.definitions[i].name.substring(0, 1).toLowerCase() + this.definitions[i].name.substring(1) 
+		for (var i = 0; i < this.$definitions.length; i++) {
+			var instance = new this.$definitions[i](self);
+			var name = this.$definitions[i].name 
+				? this.$definitions[i].name.substring(0, 1).toLowerCase() + this.$definitions[i].name.substring(1) 
 				: null;
 				
 			if (name) {
 				self[name] = instance;
 			}
 			else {
-				console.warn("Unnamed service", this.definitions[i]);
+				console.warn("Unnamed service", this.$definitions[i]);
 			}
 			if (instance.$initialize) {
 				var result = instance.$initialize();
@@ -38,6 +38,19 @@ nabu.services.ServiceManager = function(services) {
 					else if (name) {
 						self[name] = result;
 					}
+				}
+			}
+		}
+		return new nabu.utils.promises(promises);
+	}
+	
+	this.$clear = function() {
+		var promises = [];
+		for (var key in self) {
+			if (key.substring(0, 1) != "$" && self[key].$clear) {
+				var result = self[key].$clear();
+				if (result && result.then) {
+					promises.push(result);
 				}
 			}
 		}

@@ -23,7 +23,12 @@ nabu.utils.promise = function(parameters) {
 		self.response = response;
 		self.state = "success";
 		for (var i = 0; i < self.successHandlers.length; i++) {
-			self.successHandlers[i](response);
+			if (self.successHandlers[i] instanceof Function) {
+				self.successHandlers[i](response);
+			}
+			else if (self.successHandlers[i].resolve) {
+				self.successHandlers[i].resolve(response);
+			}
 		}
 	};
 	this.resolve = function(response) {
@@ -33,7 +38,12 @@ nabu.utils.promise = function(parameters) {
 		self.response = response;
 		self.state = "error";
 		for (var i = 0; i < self.errorHandlers.length; i++) {
-			self.errorHandlers[i](response);
+			if (self.errorHandlers[i] instanceof Function) {
+				self.errorHandlers[i](response);
+			}
+			else if (self.errorHandlers[i].reject) {
+				self.errorHandlers[i].reject(response);
+			}
 		}
 	};
 	this.reject = function(response) {
@@ -43,7 +53,12 @@ nabu.utils.promise = function(parameters) {
 		self.successHandlers.push(handler);
 		// if already resolved, call immediately
 		if (self.state == "success") {
-			handler(self.response);
+			if (handler instanceof Function) {
+				handler(self.response);
+			}
+			else if (handler.resolve) {
+				handler.resolve(self.response);
+			}
 		}
 		return self;
 	};
@@ -51,7 +66,12 @@ nabu.utils.promise = function(parameters) {
 		self.errorHandlers.push(handler);
 		// if already resolved, call immediately
 		if (self.state == "error") {
-			handler(self.response);
+			if (handler instanceof Function) {
+				handler(self.response);
+			}
+			else if (handler.reject) {
+				handler.reject(self.response);
+			}
 		}
 		return self;
 	};
@@ -104,13 +124,23 @@ nabu.utils.promises = function(promises) {
 		if (succeeded == self.promises.length) {
 			self.state = "success";
 			for (var i = 0; i < self.successHandlers.length; i++) {
-				self.successHandlers[i](responses);
+				if (self.successHandlers[i] instanceof Function) {
+					self.successHandlers[i](responses);
+				}
+				else if (self.successHandlers[i].resolve) {
+					self.successHandlers[i].resolve(responses);
+				}
 			}
 		}
 		else if (succeeded + failed == self.promises.length) {
 			self.state = "error";
 			for (var i = 0; i < self.errorHandlers.length; i++) {
-				self.errorHandlers[i](responses);
+				if (self.errorHandlers[i] instanceof Function) {
+					self.errorHandlers[i](responses);
+				}
+				else if (self.errorHandlers[i].reject) {
+					self.errorHandlers[i].reject(responses);
+				}
 			}
 		}
 	};
@@ -136,7 +166,12 @@ nabu.utils.promises = function(promises) {
 		self.successHandlers.push(handler);
 		// if already resolved, call immediately
 		if (self.state == "success") {
-			handler(self.response);
+			if (handler instanceof Function) {
+				handler(self.response);
+			}
+			else if (handler.resolve) {
+				handler.resolve(self.response);
+			}
 		}
 		return self;
 	};
@@ -144,7 +179,12 @@ nabu.utils.promises = function(promises) {
 		self.errorHandlers.push(handler);
 		// if already resolved, call immediately
 		if (self.state == "error") {
-			handler(self.response);
+			if (handler instanceof Function) {
+				handler(self.response);
+			}
+			else if (handler.reject) {
+				handler.reject(self.response);
+			}
 		}
 		return self;
 	};

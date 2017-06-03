@@ -118,10 +118,10 @@ nabu.services.SwaggerClient = function(parameters) {
 		}
 		var operation = self.operations[name];
 		var path = operation.path;
-		if (self.swagger.basePath) {
-			path = self.swagger.basePath + "/" + path;
-			path = path.replace(new RegExp("[/]+"), "/")
+		if (self.swagger.basePath && self.swagger.basePath != "/") {
+			path = self.swagger.basePath + (path.substring(0, 1) == "/" ? "" : "/") + path;
 		}
+		console.log("path is", path);
 		if (path.substring(0, 1) != "/") {
 			path = "/" + path;
 		}
@@ -160,7 +160,7 @@ nabu.services.SwaggerClient = function(parameters) {
 									throw "Unsupported collection format: " + collectionFormat;
 								}
 							}
-							result += value[j];
+							result += encodeURIComponent(value[j]);
 						}
 						value = result;
 					}
@@ -187,12 +187,12 @@ nabu.services.SwaggerClient = function(parameters) {
 			if (query[key] instanceof Array) {
 				for (var i = 0; i < query[key].length; i++) {
 					path += path.indexOf("?") >= 0 ? "&" : "?";
-					path += key + "=" + query[key][i];
+					path += encodeURIComponent(key) + "=" + encodeURIComponent(query[key][i]);
 				}
 			}
 			else {
 				path += path.indexOf("?") >= 0 ? "&" : "?";
-				path += key + "=" + query[key];
+				path += encodeURIComponent(key) + "=" + encodeURIComponent(query[key]);
 			}
 		});
 		
