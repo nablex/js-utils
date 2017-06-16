@@ -53,6 +53,9 @@
 			}, 
 			"promise.js": {
 				"url": "misc/promise.js"
+			}, 
+			"cookies.js": {
+				"url": "misc/cookies.js"
 			}
 		}
 	}

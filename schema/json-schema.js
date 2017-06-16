@@ -49,6 +49,9 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 		if (typeof(value) === "boolean") {
 			return value;
 		}
+		else if (typeof(value) == "undefined" || value == null) {
+			return null;
+		}
 		else {
 			return !!value;
 		}

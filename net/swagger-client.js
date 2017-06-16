@@ -121,7 +121,6 @@ nabu.services.SwaggerClient = function(parameters) {
 		if (self.swagger.basePath && self.swagger.basePath != "/") {
 			path = self.swagger.basePath + (path.substring(0, 1) == "/" ? "" : "/") + path;
 		}
-		console.log("path is", path);
 		if (path.substring(0, 1) != "/") {
 			path = "/" + path;
 		}
@@ -168,17 +167,19 @@ nabu.services.SwaggerClient = function(parameters) {
 				if (operation.parameters[i].in == "path") {
 					path = path.replace(new RegExp("\{[\\s]*" + operation.parameters[i].name + "[^}]*\}"), value);
 				}
-				else if (operation.parameters[i].in == "query") {
-					query[operation.parameters[i].name] = value;
-				}
-				else if (operation.parameters[i].in == "header") {
-					headers[operation.parameters[i].name] = value;
-				}
-				else if (operation.parameters[i].in == "body") {
-					data = value;
-				}
-				else {
-					throw "Invalid 'in': " + operation.parameters[i].in;
+				else if (value != null && value != "" && typeof(value) != "undefined") {
+					if (operation.parameters[i].in == "query") {
+						query[operation.parameters[i].name] = value;
+					}
+					else if (operation.parameters[i].in == "header") {
+						headers[operation.parameters[i].name] = value;
+					}
+					else if (operation.parameters[i].in == "body") {
+						data = value;
+					}
+					else {
+						throw "Invalid 'in': " + operation.parameters[i].in;
+					}
 				}
 			}
 		}

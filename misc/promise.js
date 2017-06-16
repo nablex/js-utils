@@ -204,8 +204,18 @@ nabu.utils.promises = function(promises) {
 }
 
 nabu.services.Q = function Q() {
-	this.defer = function() {
-		return new nabu.utils.promise();
+	this.defer = function(promise, result) {
+		// if you pass in a promise, we build on that, this only makes sense if you send back a different result, otherwise use the original promise
+		if (promise && typeof(result) != "undefined") {
+			var newPromise = new nabu.utils.promise();
+			promise.then(function(object) {
+				newPromise.resolve(result);
+			}, newPromise);
+			return newPromise;
+		}
+		else {
+			return new nabu.utils.promise();
+		}
 	};
 	this.all = function() {
 		var array = [];

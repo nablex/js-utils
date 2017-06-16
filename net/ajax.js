@@ -205,7 +205,7 @@ nabu.utils.ajax = function(parameters) {
 	}
 
 	// need to add these headers for post
-	if (parameters.method.toUpperCase() == "POST" || parameters.method.toUpperCase() == "PUT" || parameters.method.toUpperCase() == "DELETE") {
+	if (parameters.method.toUpperCase() == "POST" || parameters.method.toUpperCase() == "PUT" || parameters.method.toUpperCase() == "DELETE" || parameters.method.toUpperCase() == "PATCH") {
 		// if we are sending an object as data, jsonify it
 		if (parameters.data && typeof(parameters.data) == "object" && !(parameters.data instanceof File)) {
 			parameters.data = JSON.stringify(parameters.data);
