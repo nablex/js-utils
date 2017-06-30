@@ -87,5 +87,113 @@ nabu.utils.elements = {
 		template.appendChild(element);
 		recursiveStrip(template);
 		return returnAsString ? template.innerHTML : template;
+	},
+	inlineCss: function(element, recursive, media, elementAcceptor, rules) {
+		if (!elementAcceptor) {
+			elementAcceptor = function(x) {
+				var tagName = x.tagName.toLowerCase();
+				var blacklist = ["br", "strong", "i", "b", "u", "hr", "center"];
+				return blacklist.indexOf(tagName) < 0;
+			}
+		}
+		/*// https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleDeclaration
+		var style = window.getComputedStyle(element, null);
+		// the "style" object also has a length & item() method where you can loop over all the properties
+		// however, this is currently not supported in server side rendering and in the browser it lists _everything_
+		// this leads to extremely bloated inline css, it is better to target a number of properties
+		var result = "";
+		for (var i = 0; i < properties.length; i++) {
+			if (result != "") {
+				result += ";"
+			}
+			result += properties[i] + ":" + style.getPropertyValue(properties[i]);
+		}
+		element.setAttribute("test", result.replace("\"", "'"));*/
+		
+		if (!rules) {
+			rules = nabu.utils.elements.cssRules(media);
+		}
+		
+		if (elementAcceptor(element)) {
+			var css = nabu.utils.elements.css(element, rules);
+			var result = "";
+			for (var i = 0; i < css.length; i++) {
+				if (result != "") {
+					result += ";"
+				}
+				result += css[i].replace(/.*\{[\s]*(.*)[\s]*\}.*/, "$1");
+			}
+			element.setAttribute("style", result);
+		}
+		
+		if (recursive) {
+			var child = nabu.utils.elements.first(element);
+			while (child) {
+				nabu.utils.elements.inlineCss(child, recursive, media, elementAcceptor, rules);
+				child = nabu.utils.elements.next(child);
+			}
+		}
+	},
+	cssRules: function(media) {
+		var result = [];
+		var sheets = document.styleSheets;
+		var rules = sheets.item(i).rules || sheets.item(i).cssRules;
+		for (var i = 0; i < rules.length; i++) {
+			var rule = rules.item(i);
+			if (media && rule.media) {
+				var isCorrectMedia = false;
+				for (var j = 0; j < rule.media.length; j++) {
+					if (rule.media.item(j).toString() == media) {
+						isCorrectMedia = true;
+						break;
+					}
+				}
+				if (isCorrectMedia) {
+					// in new browsers, there is support for getting the rules inside the media
+					var mediaRules = rule.rules || rule.cssRules;
+					// otherwise we cheat
+					if (!mediaRules) {
+						var style = document.createElement("style");
+						style.setAttribute("type", "text/css");
+//						style.appendChild(document.createTextNode(rule.cssText.replace(/@media.*?\{(.*)\}[\s]*/, "$1")));
+						style.innerHTML = rule.cssText.replace(/@media.*?\{[\s]*(.*)[\s]*\}[\s]*/, "$1");
+						document.head.appendChild(style);
+						mediaRules = document.styleSheets[document.styleSheets.length - 1].cssRules;
+						document.head.removeChild(style);
+					}
+					if (mediaRules) {
+						for (var k = 0; k < mediaRules.length; k++) {
+							if (mediaRules.item(k).selectorText) {
+								result.push(mediaRules.item(k));
+							}
+						}
+					}
+				}
+			}
+			else if (!media) {
+				if (rule.selectorText) {
+					result.push(rule);
+				}
+			}
+		}
+		return result;
+	},
+	css: function(element, rules) {
+		var result = [];
+		var matches = element.matches || element.webkitMatchesSelector || element.mozMatchesSelector  || element.msMatchesSelector || element.oMatchesSelector;
+		if (matches) {
+			for (var i = rules.length - 1; i >= 0; i--) {
+				try {
+					if (matches.call(element, rules[i].selectorText)) {
+						result.push(rules[i].cssText);
+					}
+				}
+				catch(e) {
+					// we delete the rule, so we don't retry it
+					rules.splice(i, 1);
+				}
+			}
+		}
+		return result;
 	}
 };

@@ -230,12 +230,14 @@ nabu.utils.ajax = function(parameters) {
 				parameters.contentType = "application/octet-stream";
 			}
 		}
-		if (!parameters.contentType) {
+		if (!parameters.contentType && parameters.data) {
 			parameters.contentType = "application/x-www-form-urlencoded";
 		}
-		request.setRequestHeader("Content-Type", parameters.contentType);
-		if (parameters.binary || (parameters.contentType.substring(0, 6) == "image/" && !(parameters.data instanceof File))) {
-			parameters.data = nabu.utils.binary.blob(parameters.data, parameters.contentType);
+		if (parameters.contentType) {
+			request.setRequestHeader("Content-Type", parameters.contentType);
+			if (parameters.binary || (parameters.contentType.substring(0, 6) == "image/" && !(parameters.data instanceof File))) {
+				parameters.data = nabu.utils.binary.blob(parameters.data, parameters.contentType);
+			}
 		}
 	}
 	else {

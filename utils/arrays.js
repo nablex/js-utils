@@ -81,5 +81,11 @@ nabu.utils.arrays = {
 	},
 	clear: function(array) {
 		array.splice(0, array.length);
+	},
+	unique: function(array) {
+		return array.filter(function(value, index, self) {
+			// only allow it if it is the first occurence
+			return self.indexOf(value) === index;
+		});
 	}
 };
