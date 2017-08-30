@@ -39,28 +39,30 @@ nabu.utils.objects = {
 		}
 		else {
 			for (var i = 1; i < arguments.length; i++) {
-				var overwrite = typeof(arguments[i].$overwrite) == "undefined" ? true : arguments[i].$overwrite;
-				for (var key in arguments[i]) {
-					if (key == "$overwrite") {
-						continue;
-					}
-					if (arguments[i][key] instanceof Array) {
-						if (!original[key]) {
-							original[key] = [];
+				if (arguments[i]) {
+					var overwrite = typeof(arguments[i].$overwrite) == "undefined" ? true : arguments[i].$overwrite;
+					for (var key in arguments[i]) {
+						if (key == "$overwrite") {
+							continue;
 						}
-						nabu.utils.arrays.merge(original[key], arguments[i][key]);
-					}
-					else if (typeof arguments[i][key] == "object") {
-						if (!original[key]) {
-							original[key] = arguments[i][key];
+						if (arguments[i][key] instanceof Array) {
+							if (!original[key]) {
+								original[key] = [];
+							}
+							nabu.utils.arrays.merge(original[key], arguments[i][key]);
 						}
-						else {
-							nabu.utils.objects.merge(original[key], arguments[i][key]);
+						else if (typeof arguments[i][key] == "object" && !(arguments[i][key] instanceof Date)) {
+							if (!original[key]) {
+								original[key] = arguments[i][key];
+							}
+							else {
+								nabu.utils.objects.merge(original[key], arguments[i][key]);
+							}
 						}
-					}
-					else if (typeof arguments[i][key] != "undefined") {
-						if (!original[key] || overwrite) {
-							original[key] = arguments[i][key];
+						else if (typeof arguments[i][key] != "undefined") {
+							if (!original[key] || overwrite) {
+								original[key] = arguments[i][key];
+							}
 						}
 					}
 				}

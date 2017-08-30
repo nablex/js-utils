@@ -151,7 +151,7 @@ nabu.services.Router = function(parameters) {
 				}
 			}
 		}
-		return url;
+		return self.useHash && url.substring(0, 2) != "#" ? "#" + url : url;
 	};
 	
 	this.updateUrl = function(alias, url, parameters, query) {
@@ -159,7 +159,7 @@ nabu.services.Router = function(parameters) {
 		url = this.templateUrl(url, parameters, query);
 		if (self.useHash) {
 			self.changingHash = true;
-			window.location.hash = "#" + url;
+			window.location.hash = url;
 		}
 		else if (window.history) {
 			window.history.pushState({}, alias, url);
