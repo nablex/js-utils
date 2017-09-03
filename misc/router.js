@@ -43,7 +43,7 @@ nabu.services.Router = function(parameters) {
 	// all the routes available
 	this.routes = [];
 	// the current route
-	this.current = null;
+	this.current = {};
 	this.enter = parameters.enter ? parameters.enter : null;
 	this.leave = parameters.leave ? parameters.leave : null;
 	this.unknown = parameters.unknown ? parameters.unknown : null;
@@ -90,7 +90,7 @@ nabu.services.Router = function(parameters) {
 			throw "Unknown route: " + alias;
 		}
 		if (self.authorizer) {
-			var result = self.authorizer(anchor, chosenRoute, parameters, self.current ? self.current.route : null, self.current ? self.current.parameters : null);
+			var result = self.authorizer(anchor, chosenRoute, parameters, self.current[anchor] ? self.current[anchor].route : null, self.current[anchor] ? self.current[anchor].parameters : null);
 			if (typeof(result) == "boolean" && !result) {
 				return false;
 			}
@@ -104,17 +104,17 @@ nabu.services.Router = function(parameters) {
 			}
 		}
 		var leaveReturn = null;
-		if (self.current && self.current.route.leave) {
-			leaveReturn = self.current.route.leave(anchor, self.current.parameters, chosenRoute, parameters);
+		if (self.current[anchor] && self.current[anchor].route.leave) {
+			leaveReturn = self.current[anchor].route.leave(anchor, self.current[anchor].parameters, chosenRoute, parameters);
 		}
 		if (self.leave != null) {
-			self.leave(anchor, self.current.route, self.current.parameters, chosenRoute, parameters, leaveReturn);
+			self.leave(anchor, self.current[anchor] ? self.current[anchor].route : null, self.current[anchor] ? self.current[anchor].parameters : null, chosenRoute, parameters, leaveReturn);
 		}
-		var enterReturn = chosenRoute.enter(anchor, parameters, self.current ? self.current.route : null, self.current ? self.current.parameters : null);
+		var enterReturn = chosenRoute.enter(anchor, parameters, self.current[anchor] ? self.current[anchor].route : null, self.current[anchor] ? self.current[anchor].parameters : null);
 		if (self.enter != null) {
-			self.enter(anchor, chosenRoute, parameters, self.current ? self.current.route : null, self.current ? self.current.parameters : null, enterReturn);
+			self.enter(anchor, chosenRoute, parameters, self.current[anchor] ? self.current[anchor].route : null, self.current[anchor] ? self.current[anchor].parameters : null, enterReturn);
 		}
-		self.current = {
+		self.current[anchor] = {
 			route: chosenRoute,
 			parameters: parameters
 		};
@@ -267,14 +267,14 @@ nabu.services.Router = function(parameters) {
 		}
 		// check for actual data route
 		if (self.useHash) {
-			self.current = self.findRoute(window.location.hash && window.location.hash.length > 1 ? window.location.hash.substring(1) : "/");
+			self.current[anchor] = self.findRoute(window.location.hash && window.location.hash.length > 1 ? window.location.hash.substring(1) : "/");
 		}
 		else {
-			self.current = self.findRoute(window.location.pathname ? window.location.pathname : "/");
+			self.current[anchor] = self.findRoute(window.location.pathname ? window.location.pathname : "/");
 		}
-		if (self.current != null) {
+		if (self.current[anchor] != null) {
 			if (self.authorizer) {
-				var result = self.authorizer(anchor, self.current.route, self.current.parameters, null, null);
+				var result = self.authorizer(anchor, self.current[anchor].route, self.current[anchor].parameters, null, null);
 				if (typeof(result) == "object" && result) {
 					var alternativeRoute = self.findByAlias(
 						result.alias,
@@ -285,7 +285,7 @@ nabu.services.Router = function(parameters) {
 					if (alternativeRoute == null) {
 						throw "Could not find alternative route: " + result.alias;
 					}
-					self.current = {
+					self.current[anchor] = {
 						route: alternativeRoute,
 						parameters: result.parameters
 					}
@@ -295,12 +295,12 @@ nabu.services.Router = function(parameters) {
 					self.updateUrl(alternativeRoute.alias, alternativeRoute.url, parameters);
 				}
 			}
-			var enterReturn = self.current.route.enter(anchor, self.current.parameters, null, null);
+			var enterReturn = self.current[anchor].route.enter(anchor, self.current[anchor].parameters, null, null);
 			if (self.enter != null) {
-				self.enter(anchor, self.current.route, self.current.parameters, null, null, enterReturn);
+				self.enter(anchor, self.current[anchor].route, self.current[anchor].parameters, null, null, enterReturn);
 			}
 		}
-		return self.current.route;
+		return self.current[anchor].route;
 	};
 	
 	this.findByAlias = function(alias, parameters, anchor, initial) {
