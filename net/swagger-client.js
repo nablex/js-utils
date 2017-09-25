@@ -7,10 +7,10 @@ if (!nabu.services) { nabu.services = {}; }
 // 		host (includes scheme), method, url, headers, data, contentType, secure
 nabu.services.SwaggerClient = function(parameters) {
 	var self = this;
-	this.swagger = typeof(parameters.definition) == "string" ? JSON.parse(parameters.definition) : parameters.definition;
+	this.swagger = null;
 	this.operations = {};
-	this.secure = this.swagger.schemes.indexOf("https") >= 0;
-	this.host = this.swagger.host && parameters.useHost ? (this.secure ? "https://" : "http://") + this.swagger.host : null;
+	this.secure = false;
+	this.host = null;
 	this.executor = parameters.executor;
 	this.normalize = parameters.normalize;
 	this.parseError = parameters.parseError;
@@ -85,27 +85,41 @@ nabu.services.SwaggerClient = function(parameters) {
 			);
 		}
 		else {
-			throw "Remember not supported";
+			var promise = new nabu.utils.promise();
+			promise.reject();
+			return promise;
 		}
 	}
 
-	if (this.swagger.swagger != "2.0") {
-		throw "Only swagger 2.0 is currently supported";	
-	}
+	this.loadDefinition = function(definition) {
+		this.swagger = typeof(definition) == "string" ? JSON.parse(definition) : definition
 
-	if (self.swagger && self.swagger.paths) {
-		Object.keys(self.swagger.paths).forEach(function (path) {
-			Object.keys(self.swagger.paths[path]).forEach(function (method) {
-				var operation = self.swagger.paths[path][method];
-				self.operations[operation.operationId] = {
-					id: operation.operationId,
-					parameters: operation.parameters,
-					path: path,
-					method: method,
-					responses: operation.responses
-				}
+		if (this.swagger.swagger != "2.0") {
+			throw "Only swagger 2.0 is currently supported";	
+		}
+
+		this.operations = {};
+		if (this.swagger && this.swagger.paths) {
+			Object.keys(self.swagger.paths).forEach(function (path) {
+				Object.keys(self.swagger.paths[path]).forEach(function (method) {
+					var operation = self.swagger.paths[path][method];
+					self.operations[operation.operationId] = {
+						id: operation.operationId,
+						parameters: operation.parameters,
+						path: path,
+						method: method,
+						responses: operation.responses
+					}
+				});
 			});
-		});
+		}
+		this.secure = this.swagger.schemes.indexOf("https") >= 0;
+		this.host = this.swagger.host && parameters.useHost ? (this.secure ? "https://" : "http://") + this.swagger.host : null;
+	}
+	
+	// load the initial definition
+	if (parameters.definition) {
+		this.loadDefinition(parameters.definition);
 	}
 	
 	this.operation = function(name) {
@@ -128,7 +142,8 @@ nabu.services.SwaggerClient = function(parameters) {
 		var headers = {};
 		var data = null;
 		for (var i = 0; i < operation.parameters.length; i++) {
-			if (operation.parameters[i].required && (!parameters || !parameters[operation.parameters[i].name])) {
+			// we don't check header parameters as they may be injected by the browser and or ajax library
+			if (operation.parameters[i].required && operation.parameters[i].in != "header" && (!parameters || typeof(parameters[operation.parameters[i].name]) == "undefined")) {
 				throw "Missing required parameter: " + operation.parameters[i].name;
 			}
 			if (parameters && parameters.hasOwnProperty(operation.parameters[i].name)) {
@@ -167,7 +182,7 @@ nabu.services.SwaggerClient = function(parameters) {
 				if (operation.parameters[i].in == "path") {
 					path = path.replace(new RegExp("\{[\\s]*" + operation.parameters[i].name + "[^}]*\}"), value);
 				}
-				else if (value != null && value != "" && typeof(value) != "undefined") {
+				else if (value != null && value !== "" && typeof(value) != "undefined") {
 					if (operation.parameters[i].in == "query") {
 						query[operation.parameters[i].name] = value;
 					}

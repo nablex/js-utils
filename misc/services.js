@@ -7,6 +7,7 @@ if (!nabu.services) { nabu.services = {}; }
 nabu.services.ServiceManager = function() {
 	var self = this;
 	this.$definitions = [];
+	this.$instances = [];
 	
 	for (var i = 0; i < arguments.length; i++) {
 		this.$definitions.push(arguments[i]);
@@ -35,6 +36,7 @@ nabu.services.ServiceManager = function() {
 						if (service && name) {
 							service.$initialized = new Date();
 							target[name] = service;
+							self.$instances.push(service);
 						}
 					});
 					promises.push(result);
@@ -42,10 +44,12 @@ nabu.services.ServiceManager = function() {
 				// we assume that you returned the actual service instance
 				else if (name) {
 					target[name] = result;
+					self.$instances.push(result);
 				}
 			}
 			else {
 				target[name] = instance;
+				self.$instances.push(instance);
 			}
 		};
 		
@@ -78,23 +82,17 @@ nabu.services.ServiceManager = function() {
 		return new nabu.utils.promises(promises);
 	}
 	
-	this.$clear = function(target) {
-		if (!target) {
-			target = self;
-		}
+	this.$clear = function() {
 		var promises = [];
-		for (var key in target) {
-			if (target[key].$initialized) {
-				if (key.substring(0, 1) != "$" && target[key].$clear) {
-					var result = target[key].$clear();
-					target[key].$initialized = new Date();
+		for (var i = 0; i < this.$instances.length; i++) {
+			if (this.$instances[i].$initialized) {
+				if (this.$instances[i].$clear) {
+					var result = this.$instances[i].$clear();
+					this.$instances[i].$initialized = new Date();
 					if (result && result.then) {
 						promises.push(result);
 					}
 				}
-			}
-			else if (target[key] instanceof Object) {
-				this.$clear(target[key]);
 			}
 		}
 		return new nabu.utils.promises(promises);

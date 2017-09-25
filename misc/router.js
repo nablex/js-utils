@@ -48,12 +48,13 @@ nabu.services.Router = function(parameters) {
 	this.leave = parameters.leave ? parameters.leave : null;
 	this.unknown = parameters.unknown ? parameters.unknown : null;
 	this.authorizer = parameters.authorizer ? parameters.authorizer : null;
+	this.chosen = parameters.chosen ? parameters.chosen : null;
 
 	this.previousUrl = window.location.pathname;
 	this.changingHash = false;
 
 	// listen to hash changes
-	window.addEventListener("hashchange", function() {
+/*	window.addEventListener("hashchange", function() {
 		if (self.useHash) {
 			if (!self.changingHash) {
 				self.routeInitial();
@@ -62,14 +63,38 @@ nabu.services.Router = function(parameters) {
 				self.changingHash = false;
 			}
 		}
-	}, false);
+	}, false);*/
 	
 	window.addEventListener("popstate", function(event) {
-		if (!self.useHash && self.previousUrl != window.location.pathname) {
+/*		if (!self.useHash && self.previousUrl != window.location.pathname) {
 			self.routeInitial();
 			self.previousUrl = window.location.pathname;
+		}*/
+		var state = event.state;
+		var alias = state ? state.alias : null;
+		var anchor = state ? state.anchor : null;
+		if (!alias) {
+			self.routeInitial(anchor, state ? state.parameters : null, true);
+		}
+		else {
+			self.route(alias, state ? state.parameters : null, anchor, true);
 		}
 	}, false);
+	
+	this.get = function(alias) {
+		this.sort();
+		for (var i = 0; i < this.routes.length; i++) {
+			if (this.routes[i].alias == alias) {
+				return this.routes[i];
+			}
+		}
+		return null;
+	};
+	
+	this.list = function(alias) {
+		this.sort();
+		return this.routes;
+	};
 
 	// route to a new alias
 	this.route = function(alias, parameters, anchor, mask) {
@@ -103,6 +128,18 @@ nabu.services.Router = function(parameters) {
 				);
 			}
 		}
+		if (self.chosen) {
+			var alternative = self.chosen(anchor, chosenRoute, parameters, self.current[anchor] ? self.current[anchor].route : null, self.current[anchor] ? self.current[anchor].parameters : null);
+			if (alternative && alternative.route) {
+				chosenRoute = alternative.route;
+			}
+			if (alternative && alternative.parameters) {
+				parameters = alternative.parameters;
+			}
+			if (alternative && typeof(alternative.mask) != "undefined") {
+				mask = alternative.mask;
+			}
+		}
 		var leaveReturn = null;
 		if (self.current[anchor] && self.current[anchor].route.leave) {
 			leaveReturn = self.current[anchor].route.leave(anchor, self.current[anchor].parameters, chosenRoute, parameters);
@@ -120,14 +157,14 @@ nabu.services.Router = function(parameters) {
 		};
 		// update the current URL if the state has a URL attached to it
 		if (chosenRoute.url && !mask) {
-			self.updateUrl(chosenRoute.alias, chosenRoute.url, parameters, chosenRoute.query);
+			self.updateUrl(chosenRoute.alias, chosenRoute.url, parameters, chosenRoute.query, anchor);
 		}
 		return true;
 	};
 	
 	this.template = function(alias, parameters) {
 		var route = this.findByAlias(alias, parameters, null, false);
-		return route ? this.templateUrl(route.url, parameters, route.query) : null;
+		return route && route.url ? this.templateUrl(route.url, parameters, route.query) : null;
 	};
 	
 	this.templateUrl = function(url, parameters, query) {
@@ -154,18 +191,31 @@ nabu.services.Router = function(parameters) {
 		return self.useHash && url.substring(0, 2) != "#" ? "#" + url : url;
 	};
 	
-	this.updateUrl = function(alias, url, parameters, query) {
+	this.updateUrl = function(alias, url, parameters, query, anchor) {
 		var self = this;
 		url = this.templateUrl(url, parameters, query);
-		if (self.useHash) {
+		/*if (self.useHash) {
 			self.changingHash = true;
 			window.location.hash = url;
-		}
-		else if (window.history) {
-			window.history.pushState({}, alias, url);
+		}*/
+		if (window.history) {
+			if (!parameters) {
+				parameters = {};
+			}
+			window.history.pushState({ alias: alias, anchor: anchor, parameters: parameters }, alias, url);
 			self.previousUrl = window.location.pathname;
 		}
 	};
+
+	this.sort = function() {
+		// sort the routes based on priority
+		// this allows for default routes to be defined and overwritten
+		this.routes.sort(function(a, b) {
+			// lowest priority has to be sorted to the back of the array so they get picked last
+			return (typeof(b.priority) == "undefined" ? 0 : b.priority)
+				- (typeof(a.priority) == "undefined" ? 0 : a.priority);
+		});
+	}
 
 	this.findRoute = function(path, initial) {
 		if (!path) {
@@ -178,34 +228,43 @@ nabu.services.Router = function(parameters) {
 		if (queryIndex >= 0) {
 			path = path.substring(0, queryIndex);
 		}
+		this.sort();
 		for (var i = 0; i < self.routes.length; i++) {
 			if (self.routes[i].url && ((!initial && !self.routes[i].initial) || (initial && self.routes[i].initial))) {
-				var template = "^" + self.routes[i].url.replace(/\{[\s]*[^}:]+[\s]*:[\s]*([^}]+)[\s]*\}/g, "($1)").replace(/\{[\s]*[^}]+[\s]*\}/g, "([^/]+)") + "$";
-				var matches = path.match(template);
-				if (matches) {
-					var variables = self.routes[i].url.match(template);
-					if (!variables) {
-						throw "Could not extract variables from: " + self.routes[i].url;
-					}
-					if (variables.length != matches.length) {
-						throw "The amount of variables does not equal the amount of values";
-					}
-					// the first hit is the entire string
-					for (var j = 1; j < variables.length; j++) {
-						parameters[variables[j].substring(1, variables[j].length - 1).replace(/:.*$/, "")] = matches[j];
-					}
-					chosenRoute = self.routes[i];
-					if (chosenRoute.query) {
-						var parts = queryParameters.substring(1).split("&");
-						for (var i = 0; i < parts.length; i++) {
-							var values = parts[i].split("=");
-							if (chosenRoute.query.indexOf(values[0]) >= 0) {
-								var key = values[0];
-								values.splice(0, 1);
-								parameters[key] = values.join("=");
+				var urls = self.routes[i].url instanceof Array ? self.routes[i].url : [self.routes[i].url];
+				var found = false;
+				for (var k = 0; k < urls.length; k++) {
+					var template = "^" + urls[k].replace(/\{[\s]*[^}:]+[\s]*:[\s]*([^}]+)[\s]*\}/g, "($1)").replace(/\{[\s]*[^}]+[\s]*\}/g, "([^/]+)") + "$";
+					var matches = path.match(template);
+					if (matches) {
+						var variables = urls[k].match(template);
+						if (!variables) {
+							throw "Could not extract variables from: " + urls[k].url;
+						}
+						if (variables.length != matches.length) {
+							throw "The amount of variables does not equal the amount of values";
+						}
+						// the first hit is the entire string
+						for (var j = 1; j < variables.length; j++) {
+							parameters[variables[j].substring(1, variables[j].length - 1).replace(/:.*$/, "")] = matches[j];
+						}
+						chosenRoute = self.routes[i];
+						if (chosenRoute.query) {
+							var parts = queryParameters.substring(1).split("&");
+							for (var j = 0; j < parts.length; j++) {
+								var values = parts[j].split("=");
+								if (chosenRoute.query.indexOf(values[0]) >= 0) {
+									var key = values[0];
+									values.splice(0, 1);
+									parameters[key] = values.join("=");
+								}
 							}
 						}
+						found = true;
+						break;
 					}
+				}
+				if (found) {
 					break;
 				}
 			}
@@ -217,7 +276,7 @@ nabu.services.Router = function(parameters) {
 	};
 
 	// the initial route on page load
-	this.routeInitial = function(anchor) {
+	this.routeInitial = function(anchor, parameters, mask) {
 		if (!anchor) {
 			anchor = self.defaultAnchor;
 		}
@@ -272,6 +331,18 @@ nabu.services.Router = function(parameters) {
 		else {
 			self.current[anchor] = self.findRoute(window.location.pathname ? window.location.pathname : "/");
 		}
+		if (!self.current[anchor] && self.unknown) {
+			var unknown = self.unknown(null, parameters, anchor);
+			if (unknown) {
+				self.current[anchor] = {
+					route: unknown,
+					parameters: parameters
+				};
+			}
+		}
+		if (!self.current[anchor]) {
+			throw "Unknown initial route";
+		}
 		if (self.current[anchor] != null) {
 			if (self.authorizer) {
 				var result = self.authorizer(anchor, self.current[anchor].route, self.current[anchor].parameters, null, null);
@@ -289,15 +360,31 @@ nabu.services.Router = function(parameters) {
 						route: alternativeRoute,
 						parameters: result.parameters
 					}
-					if (alternativeRoute.url && (typeof(alternativeRoute.mask) == "undefined" || !alternativeRoute.mask)) {
-						self.updateUrl(alternativeRoute.alias, alternativeRoute.url, result.parameters);
+					if (!mask) {
+						if (alternativeRoute.url && (typeof(alternativeRoute.mask) == "undefined" || !alternativeRoute.mask)) {
+							self.updateUrl(alternativeRoute.alias, alternativeRoute.url, result.parameters);
+						}
+						self.updateUrl(alternativeRoute.alias, alternativeRoute.url, parameters);
 					}
-					self.updateUrl(alternativeRoute.alias, alternativeRoute.url, parameters);
+				}
+			}
+			if (self.chosen) {
+				var alternative = self.chosen(anchor, self.current[anchor].route, parameters ? parameters : self.current[anchor].parameters, null, null);
+				if (alternative && alternative.route) {
+					self.current[anchor].route = alternative.route;
+				}
+				if (alternative && alternative.parameters) {
+					if (parameters) {
+						parameters = alternative.parameters;
+					}
+					else {
+						self.current[anchor].parameters = alternative.parameters;
+					}
 				}
 			}
 			var enterReturn = self.current[anchor].route.enter(anchor, self.current[anchor].parameters, null, null);
 			if (self.enter != null) {
-				self.enter(anchor, self.current[anchor].route, self.current[anchor].parameters, null, null, enterReturn);
+				self.enter(anchor, self.current[anchor].route, parameters ? parameters : self.current[anchor].parameters, null, null, enterReturn);
 			}
 		}
 		return self.current[anchor].route;

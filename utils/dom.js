@@ -43,7 +43,12 @@ nabu.utils.elements = {
 			element.removeChild(element.firstChild);
 		}
 	},
-	clean: function(element, allowedTags, tagsToRemove) {
+	sanitize: function(element) {
+		var allowedTags = ["a", "b", "i", "u", "em", "strong", "h1", "h2", "h3", "h4", "h5", "h6", "h7", "p", "strong"];
+		var allowedAttributes = ["style"];
+		return nabu.utils.elements.clean(element, allowedTags, null, allowedAttributes);
+	},
+	clean: function(element, allowedTags, tagsToRemove, allowedAttributes, attributesToRemove) {
 		var returnAsString = false;
 		if (typeof(element) == "string") {
 			returnAsString = true;
@@ -62,13 +67,24 @@ nabu.utils.elements = {
 			removeAttributes(element);
 			for (var i = element.childNodes.length - 1; i >= 0; i--) {
 				if (element.childNodes[i].nodeType == 1) {
-					if (tagsToRemove.indexOf(element.childNodes[i].nodeName.toLowerCase()) >= 0) {
+					if (tagsToRemove && tagsToRemove.indexOf(element.childNodes[i].nodeName.toLowerCase()) >= 0) {
 						element.removeChild(element.childNodes[i]);
 					}
 					else {
 						recursiveStrip(element.childNodes[i]);
-						if (allowedTags.indexOf(element.childNodes[i].nodeName.toLowerCase()) < 0) {
+						if (!allowedTags || allowedTags.indexOf(element.childNodes[i].nodeName.toLowerCase()) < 0) {
 							var child = element.childNodes[i];
+							if (allowedAttributes || attributesToRemove) {
+								for (var j = child.attributes.length - 1; j >= 0; j--) {
+									var attr = child.attributes.item(j);
+									if (allowedAttributes && allowedAttributes.indexOf(attr.name) < 0) {
+										child.removeAttribute(attr.name);
+									}
+									else if (attributesToRemove && attributesToRemove.indexOf(attr.name) >= 0) {
+										child.removeAttribute(attr.name);
+									}
+								}
+							}
 							var insertRef = child;
 							for (var j = child.childNodes.length - 1; j >= 0; j--) {
 								insertRef = element.insertBefore(child.childNodes[j], insertRef);
@@ -117,7 +133,7 @@ nabu.utils.elements = {
 		if (elementAcceptor(element)) {
 			var css = nabu.utils.elements.css(element, rules);
 			var result = "";
-			for (var i = 0; i < css.length; i++) {
+			for (var i = css.length - 1; i >= 0; i--) {
 				if (result != "") {
 					result += ";"
 				}
