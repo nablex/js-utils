@@ -147,6 +147,13 @@ nabu.utils.ajax = function(parameters) {
 		request.onprogress = promise.onprogress;
 	}
 	
+	// in the future we may not want to abort the request if there are multiple promise subscribers
+	// or if the promise has already been completed
+	// in that case we should only cancel the request if all subscribers want it cancelled
+	promise.cancel = function(reason) {
+		request.abort();
+	};
+	
 	request.onreadystatechange = function() {
 		switch (request.readyState) {
 			case 0:
@@ -183,6 +190,12 @@ nabu.utils.ajax = function(parameters) {
 						nabu.handlers.ajax.success(request);
 					}
 					promise.succeed(request);
+				}
+				// this indicates that the http request was aborted
+				else if (request.status == 0) {
+					if (parameters.cancelled) {
+						parameters.cancelled(request);
+					}
 				}
 				else {
 					if (parameters.error) {

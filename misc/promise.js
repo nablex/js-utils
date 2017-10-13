@@ -89,7 +89,7 @@ nabu.utils.promise = function(parameters) {
 	this.progress = function(progressHandler) {
 		self.progressHandlers.push(progressHandler);
 	};
-	this.then = function(successHandler, errorHandler, progressHandler) {
+	this.then = function(successHandler, errorHandler, progressHandler, cancelHandler) {
 		if (successHandler) {
 			self.success(successHandler);
 		}
