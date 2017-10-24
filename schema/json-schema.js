@@ -178,8 +178,11 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 	var missing = function() {
 		if (required) {
 			messages.push({
+				soft: true,
 				severity: "error",
 				code: "required",
+				title: "%{validation:The value is required}",
+				priority: 0,
 				values: {
 					actual: false,
 					expected: true
@@ -201,6 +204,8 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 		messages.push({
 			severity: "error",
 			code: "type",
+			title: "%{validation:The value '{actual}' is not a '{expected}'}",
+			priority: -1,
 			values: {
 				actual: value,
 				expected: type
@@ -213,6 +218,8 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "minLength",
+				title: "%{validation:The value '{actual}' must be at least {expected} long}",
+				priority: -2,
 				values: {
 					actual: result.length,
 					expected: minLength
@@ -226,6 +233,8 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "maxLength",
+				title: "%{validation:The value '{actual}' can be at most {expected} long}",
+				priority: -2,
 				values: {
 					actual: result.length,
 					expected: maxLength
@@ -239,8 +248,10 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "pattern",
+				title: "%{validation:The value '{actual}' does not match the expected pattern '{expected}'}",
+				priority: -3,
 				values: {
-					actual: result.length,
+					actual: result,
 					expected: pattern
 				},
 				context: []
@@ -248,10 +259,12 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 		}
 	}
 	var maximum = function(value, maximum, exclusiveMaximum) {
-		if (typeof(maximum) !== "undefined" && ( (exclusiveMaximum && value >= maximum) || (!exclusiveMaximum && value > maximum) )) {
+		if (typeof(value) !== "undefined" && ( (typeof(exclusiveMaximum) !== "undefined" && value >= exclusiveMaximum) || (typeof(maximum) !== "undefined" && value > maximum) )) {
 			messages.push({
 				severity: "error",
 				code: "maximum",
+				title: "%{validation:The value {actual} is bigger than the allowed maximum of {expected}}",
+				priority: -2,
 				values: {
 					actual: value,
 					expected: maximum,
@@ -262,10 +275,12 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 		}
 	}
 	var minimum = function(value, minimum, exclusiveMinimum) {
-		if (typeof(minimum) !== "undefined" && ( (exclusiveMinimum && value <= minimum) || (!exclusiveMinimum && value < minimum) )) {
+		if (typeof(value) !== "undefined" && ( (typeof(exclusiveMinimum) !== "undefined" && value <= exclusiveMinimum) || (typeof(minimum) !== "undefined" && value < minimum) )) {
 			messages.push({
 				severity: "error",
 				code: "minimum",
+				title: "%{validation:The value {actual} is smaller than the allowed minimum of {expected}}",
+				priority: -2,
 				values: {
 					actual: value,
 					expected: minimum,
@@ -280,6 +295,8 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "enum",
+				title: "%{validation:The value {actual} does not match one of the possible values}",
+				priority: -1,
 				values: {
 					actual: value,
 					expected: enumeration
@@ -293,6 +310,8 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "maxItems",
+				title: "%{validation:There are {actual} entries, can be at most {expected}}",
+				priority: -2,
 				values: {
 					actual: value.length,
 					expected: maxItems
@@ -306,6 +325,8 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "minItems",
+				title: "%{validation:There are only {actual} entries, expecting at least {expected}}",
+				priority: -2,
 				values: {
 					actual: value.length,
 					expected: minItems

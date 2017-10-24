@@ -50,7 +50,7 @@ nabu.services.Router = function(parameters) {
 	this.authorizer = parameters.authorizer ? parameters.authorizer : null;
 	this.chosen = parameters.chosen ? parameters.chosen : null;
 
-	this.previousUrl = window.location.pathname;
+	this.previousUrl = null;
 	this.changingHash = false;
 
 	// listen to hash changes
@@ -159,7 +159,10 @@ nabu.services.Router = function(parameters) {
 		if (chosenRoute.url && !mask) {
 			self.updateUrl(chosenRoute.alias, chosenRoute.url, parameters, chosenRoute.query, anchor);
 		}
-		return true;
+		else {
+			self.updateState(chosenRoute.alias, parameters, chosenRoute.query, anchor);
+		}
+		return enterReturn;
 	};
 	
 	this.template = function(alias, parameters) {
@@ -191,6 +194,11 @@ nabu.services.Router = function(parameters) {
 		return self.useHash && url.substring(0, 2) != "#" ? "#" + url : url;
 	};
 	
+	this.getUrl = function() {
+		var url = self.useHash ? window.location.hash : window.location.pathname;
+		return url ? url : "/";
+	};
+	
 	this.updateUrl = function(alias, url, parameters, query, anchor) {
 		var self = this;
 		url = this.templateUrl(url, parameters, query);
@@ -203,7 +211,14 @@ nabu.services.Router = function(parameters) {
 				parameters = {};
 			}
 			window.history.pushState({ alias: alias, anchor: anchor, parameters: parameters }, alias, url);
-			self.previousUrl = window.location.pathname;
+			self.previousUrl = self.getUrl();
+		}
+	};
+	
+	this.updateState = function(alias, parameters, query, anchor) {
+		// if we route directly to an element, we can't replay it
+		if (typeof(anchor) == "string") {
+			window.history.pushState({ alias: alias, anchor: anchor, parameters: parameters }, alias, self.getUrl());
 		}
 	};
 
@@ -366,6 +381,9 @@ nabu.services.Router = function(parameters) {
 						}
 						self.updateUrl(alternativeRoute.alias, alternativeRoute.url, parameters);
 					}
+					else {
+						self.updateState(alternativeRoute.alias, parameters);
+					}
 				}
 			}
 			if (self.chosen) {
@@ -409,4 +427,5 @@ nabu.services.Router = function(parameters) {
 		return route;
 	};
 
+	this.previousUrl = this.getUrl();
 }

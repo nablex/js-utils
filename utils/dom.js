@@ -133,7 +133,7 @@ nabu.utils.elements = {
 		if (elementAcceptor(element)) {
 			var css = nabu.utils.elements.css(element, rules);
 			var result = "";
-			for (var i = css.length - 1; i >= 0; i--) {
+			for (var i = 0; i < css.length; i++) {
 				if (result != "") {
 					result += ";"
 				}
@@ -203,7 +203,7 @@ nabu.utils.elements = {
 			for (var i = rules.length - 1; i >= 0; i--) {
 				try {
 					if (matches.call(element, rules[i].selectorText)) {
-						result.push(rules[i].cssText);
+						result.push({ selector: rules[i].selectorText, rule: rules[i].cssText});
 					}
 				}
 				catch(e) {
@@ -212,6 +212,20 @@ nabu.utils.elements = {
 				}
 			}
 		}
-		return result;
+		var maxLength = function(selector) {
+			var max = 0;
+			var parts = selector.split(/[\s]*,[\s]*/);
+			for (var i = 0; i < parts.length; i++) {
+				if (matches.call(element, parts[i]) && parts[i].length > max) {
+					max = parts[i].length;
+				}
+			}
+			return max;
+		}
+		// we sort from least specific to most specific so if we print them out, the most specific will be last and "win"
+		result.sort(function(a, b) {
+			return maxLength(a.selector) - maxLength(b.selector);
+		});
+		return result.map(function(x) { return x.rule });
 	}
 };

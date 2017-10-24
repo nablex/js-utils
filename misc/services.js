@@ -8,6 +8,7 @@ nabu.services.ServiceManager = function() {
 	var self = this;
 	this.$definitions = [];
 	this.$instances = [];
+	this.$promises = {};
 	
 	for (var i = 0; i < arguments.length; i++) {
 		this.$definitions.push(arguments[i]);
@@ -17,7 +18,7 @@ nabu.services.ServiceManager = function() {
 		return this.$register(this.$definitions);
 	}
 	
-	this.$register = function(services, target) {
+	this.$register = function(services, target, parentName) {
 		if (!target) {
 			target = self;
 		}
@@ -25,9 +26,11 @@ nabu.services.ServiceManager = function() {
 			services = [services];
 		}
 		
+		
 		var promises = [];
 		
-		var initializeSingle = function(instance, name) {
+		var initializeSingle = function(instance, name, promise) {
+			var fullName = (parentName ? parentName + "." : "") + name;
 			var result = instance.$initialize ? instance.$initialize() : null;
 			if (result) {
 				// we assume a promise
@@ -37,23 +40,32 @@ nabu.services.ServiceManager = function() {
 							service.$initialized = new Date();
 							target[name] = service;
 							self.$instances.push(service);
+							promise.resolve(service);
 						}
+						else {
+							self.$instances.push(instance);
+							promise.resolve(instance);
+						}
+					}, function(error) {
+						promise.reject(error);
 					});
-					promises.push(result);
 				}
 				// we assume that you returned the actual service instance
 				else if (name) {
 					target[name] = result;
 					self.$instances.push(result);
+					promise.resolve(result);
 				}
 			}
 			else {
 				target[name] = instance;
 				self.$instances.push(instance);
+				promise.resolve(instance);
 			}
 		};
 		
 		for (var i = 0; i < services.length; i++) {
+			// deprecated because named functions do not survive minification, only here for backwards compatibility
 			if (services[i] instanceof Function) {
 				var instance = new services[i](self);
 				var name = services[i].name 
@@ -67,14 +79,19 @@ nabu.services.ServiceManager = function() {
 				var names = Object.keys(services[i]);
 				for (var j = 0; j < names.length; j++) {
 					var name = names[j].substring(0, 1).toLowerCase() + names[j].substring(1);
+					var fullName = (parentName ? parentName + "." : "") + name;
 					if (services[i][names[j]] instanceof Function) {
 						var instance = new services[i][names[j]](self);
-						instance.$initialized = new Date();
-						initializeSingle(instance, name);
+						self.$promises[fullName] = new nabu.utils.promise();
+						promises.push(self.$promises[fullName]);
+						self.$promises[fullName].then(function(instance) {
+							instance.$initialized = new Date();
+						});
+						initializeSingle(instance, name, self.$promises[fullName]);
 					}
 					else {
 						target[name] = {};
-						promises.push(this.$register([services[i][names[j]]], target[name]));
+						promises.push(this.$register([services[i][names[j]]], target[name], fullName));
 					}
 				}
 			}
