@@ -403,6 +403,7 @@ nabu.services.Router = function(parameters) {
 			var enterReturn = self.current[anchor].route.enter(anchor, self.current[anchor].parameters, null, null);
 			if (self.enter != null) {
 				self.enter(anchor, self.current[anchor].route, parameters ? parameters : self.current[anchor].parameters, null, null, enterReturn);
+				self.updateState(self.current[anchor].route.alias, parameters ? parameters : self.current[anchor].parameters, self.current[anchor].query, anchor);
 			}
 		}
 		return self.current[anchor].route;
