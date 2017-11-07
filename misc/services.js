@@ -33,11 +33,23 @@ nabu.services.ServiceManager = function() {
 			if (result) {
 				// we assume a promise
 				if (result.then) {
+					var staged = false;
+					if (result.staged) {
+						result.staged(function(service) {
+							if (service && name) {
+								target[name] = service;
+								self.$instances.push(service);
+								staged = true;
+							}
+						});
+					}
 					result.then(function(service) {
 						if (service && name) {
 							service.$initialized = new Date();
-							target[name] = service;
-							self.$instances.push(service);
+							if (!staged) {
+								target[name] = service;
+								self.$instances.push(service);
+							}
 							promise.resolve(service);
 						}
 						else {
