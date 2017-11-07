@@ -17,6 +17,8 @@ nabu.utils.promise = function(parameters) {
 	this.successHandlers = [];
 	this.errorHandlers = [];
 	this.progressHandlers = [];
+	this.stagedHandlers = [];
+	this.stagedResult = null;
 	this.response = null;
 	this.parameters = parameters;
 	this.succeed = function(response) {
@@ -32,6 +34,32 @@ nabu.utils.promise = function(parameters) {
 				}
 			}
 		}
+	};
+	this.stage = function(stagedResult) {
+		if (!self.stagedResult) {
+			self.stagedResult = stagedResult;
+			for (var i = 0; i < self.stagedHandlers.length; i++) {
+				if (self.stagedHandlers[i] instanceof Function) {
+					self.stagedHandlers[i](response);
+				}
+				else if (self.stagedHandlers[i].resolve) {
+					self.stagedHandlers[i].resolve(stagedResult);
+				}
+			}
+		}
+	};
+	this.staged = function(handler) {
+		self.stagedHandlers.push(handler);
+		// if already staged, call immediately
+		if (self.stagedResult != null) {
+			if (handler instanceof Function) {
+				handler(self.stagedResult);
+			}
+			else if (handler.resolve) {
+				handler.resolve(self.stagedResult);
+			}
+		}
+		return self;
 	};
 	this.resolve = function(response) {
 		this.succeed(response);
@@ -212,6 +240,7 @@ nabu.services.Q = function Q() {
 		// if you pass in a promise, we build on that, this only makes sense if you send back a different result, otherwise use the original promise
 		if (promise && typeof(result) != "undefined") {
 			var newPromise = new nabu.utils.promise();
+			newPromise.stage(result);
 			promise.then(function(object) {
 				newPromise.resolve(result);
 			}, newPromise);

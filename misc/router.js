@@ -191,11 +191,14 @@ nabu.services.Router = function(parameters) {
 				}
 			}
 		}
-		return self.useHash && url.substring(0, 2) != "#" ? "#" + url : url;
+		return self.useHash && url.substring(0, 1) != "#" ? "#" + url : url;
 	};
 	
 	this.getUrl = function() {
 		var url = self.useHash ? window.location.hash : window.location.pathname;
+		if (self.useHash && url.substring(0, 1) != "#") {
+			url = "#" + url;
+		}
 		return url ? url : "/";
 	};
 	
