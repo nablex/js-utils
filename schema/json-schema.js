@@ -111,7 +111,9 @@ nabu.utils.schema.json.normalize = function(definition, value, resolver, createN
 		if (definition.properties) {
 			for (key in definition.properties) {
 				if (typeof(value[key]) == "undefined") {
-					value[key] = nabu.utils.schema.json.instance(definition.properties[key], resolver);
+					if (createNew) {
+						value[key] = nabu.utils.schema.json.instance(definition.properties[key], resolver);
+					}	
 				}
 				else {
 					value[key] = nabu.utils.schema.json.normalize(definition.properties[key], value[key], resolver, recursivelyCreateNew, recursivelyCreateNew);

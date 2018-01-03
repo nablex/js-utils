@@ -13,7 +13,12 @@ nabu.services.ServiceManager = function() {
 	}
 	
 	this.$initialize = function() {
-		return this.$register(this.$definitions);
+		var promise = new nabu.utils.promise();
+		var resolver = function() {
+			promise.resolve(self);
+		};
+		this.$register(this.$definitions).then(resolver, resolver);
+		return promise;
 	}
 	
 	this.$register = function(services, target, parentName) {

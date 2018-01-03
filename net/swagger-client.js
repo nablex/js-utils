@@ -151,6 +151,10 @@ nabu.services.SwaggerClient = function(parameters) {
 				if (operation.parameters[i].schema && !(value instanceof File)) {
 					value = this.format(operation.parameters[i].schema, value);
 				}
+				// for query parameters etc, they might not have a schema
+				else if (operation.parameters[i].type) {
+					value = this.format(operation.parameters[i], value);
+				}
 				if (value instanceof Array) {
 					var collectionFormat = operation.parameters[i].collectionFormat ? operation.parameters[i].collectionFormat : "csv";
 					// the "multi" collection format is handled by the query part (the only one who currently supports it)
@@ -184,10 +188,14 @@ nabu.services.SwaggerClient = function(parameters) {
 				}
 				else if (value != null && value !== "" && typeof(value) != "undefined") {
 					if (operation.parameters[i].in == "query") {
-						query[operation.parameters[i].name] = value;
+						if (value != null) {
+							query[operation.parameters[i].name] = value;
+						}
 					}
 					else if (operation.parameters[i].in == "header") {
-						headers[operation.parameters[i].name] = value;
+						if (value != null) {
+							headers[operation.parameters[i].name] = value;
+						}
 					}
 					else if (operation.parameters[i].in == "body") {
 						data = value;
