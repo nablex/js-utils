@@ -21,6 +21,9 @@ nabu.services.SwaggerClient = function(parameters) {
 		if (nabu.utils && nabu.utils.ajax) {
 			this.executor = function(parameters) {
 				var promise = new nabu.utils.promise();
+				if (parameters.map) {
+					promise.map(parameters.map);
+				}
 				nabu.utils.ajax(parameters).then(function(response) {
 					var contentType = response.getResponseHeader("Content-Type");
 					if (contentType && contentType.indexOf("application/json") >= 0) {
@@ -144,7 +147,7 @@ nabu.services.SwaggerClient = function(parameters) {
 		for (var i = 0; i < operation.parameters.length; i++) {
 			// we don't check header parameters as they may be injected by the browser and or ajax library
 			if (operation.parameters[i].required && operation.parameters[i].in != "header" && (!parameters || typeof(parameters[operation.parameters[i].name]) == "undefined")) {
-				throw "Missing required parameter: " + operation.parameters[i].name;
+				throw "Missing required parameter for " + name + ": " + operation.parameters[i].name;
 			}
 			if (parameters && parameters.hasOwnProperty(operation.parameters[i].name)) {
 				var value = parameters[operation.parameters[i].name];
@@ -234,10 +237,12 @@ nabu.services.SwaggerClient = function(parameters) {
 		};
 	};
 	
-	this.execute = function(name, parameters) {
-		return self.executor(
-			self.parameters(name, parameters)
-		);
+	this.execute = function(name, parameters, map) {
+		var executorParameters = self.parameters(name, parameters);
+		if (map) {
+			executorParameters.map = map;
+		}
+		return self.executor(executorParameters);
 	};
 	
 	this.format = function(definition, value) {

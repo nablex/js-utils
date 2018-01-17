@@ -46,10 +46,15 @@ nabu.utils.objects = {
 							continue;
 						}
 						if (arguments[i][key] instanceof Array) {
-							if (!original[key]) {
-								original[key] = [];
+							if (overwrite) {
+								original[key] = arguments[i][key];
 							}
-							nabu.utils.arrays.merge(original[key], arguments[i][key]);
+							else {
+								if (!original[key]) {
+									original[key] = [];
+								}
+								nabu.utils.arrays.merge(original[key], arguments[i][key]);
+							}
 						}
 						else if (typeof arguments[i][key] == "object" && !(arguments[i][key] instanceof Date)) {
 							if (!original[key]) {

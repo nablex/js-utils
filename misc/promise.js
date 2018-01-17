@@ -21,8 +21,14 @@ nabu.utils.promise = function(parameters) {
 	this.stagedResult = null;
 	this.response = null;
 	this.parameters = parameters;
+	this.mapper = [];
 	this.succeed = function(response) {
 		if (!self.state) {
+			if (self.mapper.length) {
+				for (var i = 0; i < self.mapper.length; i++) {
+					response = self.mapper[i](response);
+				}
+			}
 			self.response = response;
 			self.state = "success";
 			for (var i = 0; i < self.successHandlers.length; i++) {
@@ -129,6 +135,14 @@ nabu.utils.promise = function(parameters) {
 		}
 		return self;
 	};
+	this.map = function(mapper) {
+		if (mapper instanceof Array) {
+			nabu.utils.arrays.merge(self.mapper, mapper);
+		}
+		else if (mapper instanceof Function) {
+			self.mapper.push(mapper);
+		}
+	}
 };
 nabu.utils.promises = function(promises) {
 	var self = this;
