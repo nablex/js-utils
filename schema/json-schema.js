@@ -16,7 +16,11 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 	}
 	if (definition.type == "string") {
 		if (definition.format == "date" && value instanceof Date) {
-			return value.toISOString().substring(0, 10);
+			// depending on how you constructed the date, the time part may be local time or not
+			// e.g. new Date("2018-01-01") is interpreted as 0 UTC (so 1 CET) and getting the date component is UTC is the same day
+			// if you do new Date(2018, 1, 1), it is interpreted as 0 local time (so -1 vs UTC) and transforming to UTC gets you the previous day
+			return value.getFullYear() + "-" + (value.getMonth() < 9 ? "0" : "") + (value.getMonth() + 1) + "-" + (value.getDate() < 10 ? "0" : "") + value.getDate();
+//			return value.toISOString().substring(0, 10);
 		}
 		else if (definition.format == "date-time" && value instanceof Date) {
 			return value.toISOString();
@@ -111,7 +115,7 @@ nabu.utils.schema.json.normalize = function(definition, value, resolver, createN
 		if (definition.properties) {
 			for (key in definition.properties) {
 				if (typeof(value[key]) == "undefined") {
-					if (createNew) {
+					if (recursivelyCreateNew) {
 						value[key] = nabu.utils.schema.json.instance(definition.properties[key], resolver);
 					}	
 				}
@@ -245,13 +249,13 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			});
 		}
 	}
-	var pattern = function(value, pattern) {
+	var pattern = function(value, pattern, patternComment) {
 		if (typeof(pattern) !== "undefined" && !result.match(pattern)) {
 			messages.push({
 				severity: "error",
 				code: "pattern",
-				title: "%{validation:The value '{actual}' does not match the expected pattern '{expected}'}",
-				priority: -3,
+				title: patternComment ? patternComment : "%{validation:The value '{actual}' does not match the expected pattern '{expected}'}",
+				priority: patternComment ? -1 : -3,
 				values: {
 					actual: result,
 					expected: pattern
@@ -351,7 +355,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			var result = typeof(value) === "string" ? value : new String(value);
 			minLength(result, definition.minLength);
 			maxLength(result, definition.maxLength);
-			pattern(result, definition.pattern);
+			pattern(result, definition.pattern, definition.patternComment);
 		}
 	}
 	if (definition.type == "number" || definition.type == "integer") {
