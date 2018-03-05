@@ -68,7 +68,7 @@ nabu.utils.promise = function(parameters) {
 		return self;
 	};
 	this.resolve = function(response) {
-		this.succeed(response);
+		self.succeed(response);
 	};
 	this.fail = function(response) {
 		if (!self.state) {
@@ -85,7 +85,7 @@ nabu.utils.promise = function(parameters) {
 		}
 	};
 	this.reject = function(response) {
-		this.fail(response);
+		self.fail(response);
 	};
 	this.success = function(handler) {
 		self.successHandlers.push(handler);
@@ -152,6 +152,7 @@ nabu.utils.promises = function(promises) {
 	this.errorHandlers = [];
 	this.progressHandlers = [];
 	this.state = null;
+	this.response = null;
 	
 	this.resolver = function() {
 		if (self.state == null) {
@@ -169,6 +170,7 @@ nabu.utils.promises = function(promises) {
 				}
 			}
 			if (succeeded == self.promises.length) {
+				self.response = responses;
 				self.state = "success";
 				for (var i = 0; i < self.successHandlers.length; i++) {
 					if (self.successHandlers[i] instanceof Function) {
@@ -180,6 +182,7 @@ nabu.utils.promises = function(promises) {
 				}
 			}
 			else if (succeeded + failed == self.promises.length) {
+				self.response = responses;
 				self.state = "error";
 				for (var i = 0; i < self.errorHandlers.length; i++) {
 					if (self.errorHandlers[i] instanceof Function) {
