@@ -87,5 +87,15 @@ nabu.utils.arrays = {
 			// only allow it if it is the first occurence
 			return self.indexOf(value) === index;
 		});
+	},
+	hash: function(array, hasher) {
+		return array.reduce(function(result, x) {
+			var hash = hasher(x);
+			if (!result[hash]) {
+				result[hash] = [];
+			}
+			result[hash].push(x);
+			return result;
+		}, {});
 	}
 };

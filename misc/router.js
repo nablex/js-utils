@@ -481,6 +481,13 @@ nabu.services.Router = function(parameters) {
 		self.routes.push(route);
 		return route;
 	};
+	
+	this.unregister = function(route) {
+		var index = self.routes.indexOf(route);
+		if (index >= 0) {
+			self.routes.splice(index, 1);
+		}
+	};
 
 	this.previousUrl = this.getUrl();
 }

@@ -12,6 +12,13 @@ nabu.services.ServiceManager = function() {
 		this.$definitions.push(arguments[i]);
 	}
 	
+	this.$promise = function(fullName) {
+		if (!self.$promises[fullName]) {
+			self.$promises[fullName] = new nabu.utils.promise();
+		}
+		return self.$promises[fullName];
+	}
+	
 	this.$initialize = function() {
 		var promise = new nabu.utils.promise();
 		var resolver = function() {
@@ -97,12 +104,12 @@ nabu.services.ServiceManager = function() {
 					var fullName = (parentName ? parentName + "." : "") + name;
 					if (services[i][names[j]] instanceof Function) {
 						var instance = new services[i][names[j]](self);
-						self.$promises[fullName] = new nabu.utils.promise();
-						promises.push(self.$promises[fullName]);
-						self.$promises[fullName].then(function(instance) {
+						var promise = self.$promise(fullName);
+						promises.push(promise);
+						promise.then(function(instance) {
 							instance.$initialized = new Date();
 						});
-						initializeSingle(instance, name, self.$promises[fullName]);
+						initializeSingle(instance, name, promise);
 					}
 					else {
 						target[name] = {};

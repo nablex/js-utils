@@ -56,7 +56,8 @@ nabu.utils.objects = {
 								nabu.utils.arrays.merge(original[key], arguments[i][key]);
 							}
 						}
-						else if (typeof arguments[i][key] == "object" && !(arguments[i][key] instanceof Date)) {
+						// typeof(null) is object
+						else if (typeof arguments[i][key] == "object" && arguments[i][key] != null && !(arguments[i][key] instanceof Date)) {
 							if (!original[key]) {
 								original[key] = arguments[i][key];
 							}

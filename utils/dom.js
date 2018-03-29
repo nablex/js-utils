@@ -43,6 +43,13 @@ nabu.utils.elements = {
 			element.removeChild(element.firstChild);
 		}
 	},
+	inViewport: function(element) {
+		var rect = element.getBoundingClientRect();
+		return rect.top >= 0
+			&& rect.left >= 0
+			&& rect.bottom <= (window.innerHeight || document.documentElement.clientHeight)
+			&& rect.right <= (window.innerWidth || document.documentElement.clientWidth);
+	},
 	sanitize: function(element) {
 		var allowedTags = ["a", "b", "i", "u", "em", "strong", "h1", "h2", "h3", "h4", "h5", "h6", "h7", "p", "strong"];
 		var allowedAttributes = ["style"];
