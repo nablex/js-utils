@@ -51,7 +51,8 @@ nabu.utils.elements = {
 			&& rect.right <= (window.innerWidth || document.documentElement.clientWidth);
 	},
 	sanitize: function(element) {
-		var allowedTags = ["a", "b", "i", "u", "em", "strong", "h1", "h2", "h3", "h4", "h5", "h6", "h7", "p", "strong"];
+		var allowedTags = ["a", "b", "i", "u", "em", "strong", "h1", "h2", "h3", "h4", "h5", "h6", "h7", "p", "table", "ul", 
+			"li", "tr", "td", "thead", "tbody", "th", "ol", "font", "br", "span", "div"];
 		var allowedAttributes = ["style"];
 		return nabu.utils.elements.clean(element, allowedTags, null, allowedAttributes);
 	},
@@ -97,9 +98,6 @@ nabu.utils.elements = {
 								insertRef = element.insertBefore(child.childNodes[j], insertRef);
 							}
 							element.removeChild(child);
-						}
-						else if (element.childNodes[i].innerHTML.trim() == "") {
-							element.removeChild(element.childNodes[i]);
 						}
 					}
 				}

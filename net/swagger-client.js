@@ -263,6 +263,40 @@ nabu.services.SwaggerClient = function(parameters) {
 		return definition;
 	};
 	
+		this.resolve = function(element, resolved) {
+		if (!resolved) {
+			return this.resolve(element, {});
+		}
+		var self = this;
+		if (element.schema && element.schema["$ref"]) {
+			element = nabu.utils.objects.clone(element);
+			if (!resolved[element.schema["$ref"]]) {
+				resolved[element.schema["$ref"]] = this.resolve(this.definition(element.schema["$ref"]), resolved);
+			}
+			element.schema = resolved[element.schema["$ref"]];
+		}
+		else if (element.items && element.items["$ref"]) {
+			element = nabu.utils.objects.clone(element);
+			if (!resolved[element.items["$ref"]]) {
+				resolved[element.items["$ref"]] = this.resolve(this.definition(element.items["$ref"]), resolved);
+			}
+			element.items = resolved[element.items["$ref"]];
+		}
+		else if (element["$ref"]) {
+			if (!resolved[element["$ref"]]) {
+				resolved[element["$ref"]] = this.resolve(this.definition(element["$ref"]), resolved);
+			}
+			return resolved[element["$ref"]];
+		}
+		else if (element.properties) {
+			element = nabu.utils.objects.clone(element);
+			Object.keys(element.properties).map(function(key) {
+				element.properties[key] = self.resolve(element.properties[key], resolved);
+			});
+		}
+		return element;
+	}
+	
 	return this;
 };
 

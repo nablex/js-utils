@@ -3,9 +3,16 @@ if (!nabu.utils) { nabu.utils = {}; }
 
 nabu.utils.objects = {
 	clone: function(original) {
-		var copy = {};
-		nabu.utils.objects.merge(copy, original);
-		return copy;
+		if (original instanceof Array) {
+			return original.map(function(single) {
+				return nabu.utils.objects.clone(single);
+			});
+		}
+		else {
+			var copy = {};
+			nabu.utils.objects.merge(copy, original);
+			return copy;
+		}
 	},
 	retain: function(original, values) {
 		for (var key in original) {

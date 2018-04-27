@@ -87,18 +87,17 @@ nabu.services.Router = function(parameters) {
 	}, false);
 	
 	this.get = function(alias) {
-		this.sort();
-		for (var i = 0; i < this.routes.length; i++) {
-			if (this.routes[i].alias == alias) {
-				return this.routes[i];
+		var routes = this.sort();
+		for (var i = 0; i < routes.length; i++) {
+			if (routes[i].alias == alias) {
+				return routes[i];
 			}
 		}
 		return null;
 	};
 	
 	this.list = function(alias) {
-		this.sort();
-		return this.routes;
+		return this.sort();
 	};
 
 	// route to a new alias
@@ -219,8 +218,7 @@ nabu.services.Router = function(parameters) {
 	};
 	
 	this.updateUrl = function(alias, url, parameters, query, anchor) {
-		var self = this;
-		url = this.templateUrl(url, parameters, query);
+		url = self.templateUrl(url, parameters, query);
 		/*if (self.useHash) {
 			self.changingHash = true;
 			window.location.hash = url;
@@ -244,11 +242,16 @@ nabu.services.Router = function(parameters) {
 	this.sort = function() {
 		// sort the routes based on priority
 		// this allows for default routes to be defined and overwritten
-		this.routes.sort(function(a, b) {
+		// we clone the list because the list is generally watched
+		// if you are showing all the routes in a dropdown for instance, then perform a get()
+		// the actual get will trigger a sort, will change the dropdown values, etc in a loop
+		var cloned = nabu.utils.objects.clone(this.routes);
+		cloned.sort(function(a, b) {
 			// lowest priority has to be sorted to the back of the array so they get picked last
 			return (typeof(b.priority) == "undefined" ? 0 : b.priority)
 				- (typeof(a.priority) == "undefined" ? 0 : a.priority);
 		});
+		return cloned;
 	}
 
 	this.findRoute = function(path, initial) {
@@ -262,10 +265,10 @@ nabu.services.Router = function(parameters) {
 		if (queryIndex >= 0) {
 			path = path.substring(0, queryIndex);
 		}
-		this.sort();
-		for (var i = 0; i < self.routes.length; i++) {
-			if (self.routes[i].url && ((!initial && !self.routes[i].initial) || (initial && self.routes[i].initial))) {
-				var urls = self.routes[i].url instanceof Array ? self.routes[i].url : [self.routes[i].url];
+		var routes = this.sort();
+		for (var i = 0; i < routes.length; i++) {
+			if (routes[i].url && ((!initial && !routes[i].initial) || (initial && routes[i].initial))) {
+				var urls = routes[i].url instanceof Array ? routes[i].url : [routes[i].url];
 				var found = false;
 				for (var k = 0; k < urls.length; k++) {
 					var template = "^" + urls[k].replace(/\{[\s]*[^}:]+[\s]*:[\s]*([^}]+)[\s]*\}/g, "($1)").replace(/\{[\s]*[^}]+[\s]*\}/g, "([^/]+)") + "$";
@@ -282,7 +285,7 @@ nabu.services.Router = function(parameters) {
 						for (var j = 1; j < variables.length; j++) {
 							parameters[variables[j].substring(1, variables[j].length - 1).replace(/:.*$/, "")] = matches[j];
 						}
-						chosenRoute = self.routes[i];
+						chosenRoute = routes[i];
 						if (chosenRoute.query) {
 							var parts = queryParameters.substring(1).split("&");
 							for (var j = 0; j < parts.length; j++) {
@@ -332,17 +335,18 @@ nabu.services.Router = function(parameters) {
 	this.routeAll = function(alias, parameters, anchor, mask) {
 		var initialRoute = null;
 		var chosenRoute = null;
-		for (var i = 0; i < self.routes.length; i++) {
-			if (self.routes[i].alias == alias) {
-				if (self.routes[i].initial && !initialRoute) {
-					initialRoute = self.routes[i];
+		var routes = this.sort();
+		for (var i = 0; i < routes.length; i++) {
+			if (routes[i].alias == alias) {
+				if (routes[i].initial && !initialRoute) {
+					initialRoute = routes[i];
 				}
-				else if (!self.routes[i].initial && !chosenRoute) {
-					chosenRoute = self.routes[i];
+				else if (!routes[i].initial && !chosenRoute) {
+					chosenRoute = routes[i];
 				}
 			}
-			else if (self.routes[i].initial && !initialRoute && alias.match(self.routes[i].alias)) {
-				initialRoute = self.routes[i];
+			else if (routes[i].initial && !initialRoute && alias.match(routes[i].alias)) {
+				initialRoute = routes[i];
 			}
 		}
 		self.routePage(
