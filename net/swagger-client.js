@@ -146,7 +146,7 @@ nabu.services.SwaggerClient = function(parameters) {
 		var data = null;
 		for (var i = 0; i < operation.parameters.length; i++) {
 			// we don't check header parameters as they may be injected by the browser and or ajax library
-			if (operation.parameters[i].required && operation.parameters[i].in != "header" && (!parameters || typeof(parameters[operation.parameters[i].name]) == "undefined")) {
+			if (operation.parameters[i].required && operation.parameters[i].in != "header" && (!parameters || typeof(parameters[operation.parameters[i].name]) == "undefined" || parameters[operation.parameters[i].name] == null)) {
 				throw "Missing required parameter for " + name + ": " + operation.parameters[i].name;
 			}
 			if (parameters && parameters.hasOwnProperty(operation.parameters[i].name)) {

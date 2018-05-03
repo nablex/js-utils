@@ -72,7 +72,8 @@ nabu.utils.elements = {
 		};
 
 		var recursiveStrip = function (element) {
-			removeAttributes(element);
+			// very odd line, perhaps from before there was a white/blacklist?
+			//removeAttributes(element);
 			for (var i = element.childNodes.length - 1; i >= 0; i--) {
 				if (element.childNodes[i].nodeType == 1) {
 					if (tagsToRemove && tagsToRemove.indexOf(element.childNodes[i].nodeName.toLowerCase()) >= 0) {

@@ -2,6 +2,27 @@ if (!nabu) { nabu = {}; }
 if (!nabu.utils) { nabu.utils = {}; }
 
 nabu.utils.objects = {
+	copy: function(content) {
+		var area = document.createElement("textarea");
+		// Prevent zooming on iOS
+		area.style.fontSize = '12pt';
+		// Reset box model
+		area.style.border = '0';
+		area.style.padding = '0';
+		area.style.margin = '0';
+		// Move element out of screen horizontally
+		area.style.position = 'absolute';
+		area.style.left = '-9999px';
+		// Move element to the same position vertically
+		var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+		area.style.top = yPosition + "px";
+		
+		area.setAttribute('readonly', '');
+		area.value = typeof(content) == "string" ? content : JSON.stringify(content);
+		document.body.appendChild(area);
+		area.select();
+		document.execCommand("copy");
+	},
 	clone: function(original) {
 		if (original instanceof Array) {
 			return original.map(function(single) {
