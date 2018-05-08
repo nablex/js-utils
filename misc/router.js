@@ -153,7 +153,7 @@ nabu.services.Router = function(parameters) {
 		}
 		var enterReturn = chosenRoute.enter(anchor, parameters, self.current[anchor] ? self.current[anchor].route : null, self.current[anchor] ? self.current[anchor].parameters : null);
 		if (self.enter != null) {
-			self.enter(anchor, chosenRoute, parameters, self.current[anchor] ? self.current[anchor].route : null, self.current[anchor] ? self.current[anchor].parameters : null, enterReturn);
+			self.enter(anchor, chosenRoute, parameters, self.current[anchor] ? self.current[anchor].route : null, self.current[anchor] ? self.current[anchor].parameters : null, enterReturn, mask);
 		}
 		self.current[anchor] = {
 			route: chosenRoute,
