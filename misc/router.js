@@ -487,9 +487,16 @@ nabu.services.Router = function(parameters) {
 	};
 	
 	this.unregister = function(route) {
-		var index = self.routes.indexOf(route);
-		if (index >= 0) {
-			self.routes.splice(index, 1);
+		if (typeof(route) == "string") {
+			route = self.routes.filter(function(x) {
+				return x.alias == route;
+			})[0];
+		}
+		if (route) {
+			var index = self.routes.indexOf(route);
+			if (index >= 0) {
+				self.routes.splice(index, 1);
+			}
 		}
 	};
 
