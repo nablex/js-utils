@@ -106,7 +106,12 @@ nabu.utils.elements = {
 		}
 
 		var template = document.createElement("div");
-		template.appendChild(element);
+		if (typeof(element) == "object" && element.nodeType === 1) {
+			template.appendChild(element);
+		}
+		else {
+			template.innerHTML = element;
+		}
 		recursiveStrip(template);
 		return returnAsString ? template.innerHTML : template;
 	},
