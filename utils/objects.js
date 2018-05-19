@@ -23,6 +23,9 @@ nabu.utils.objects = {
 		area.select();
 		document.execCommand("copy");
 	},
+	deepClone: function(original) {
+		return JSON.parse(JSON.stringify(original));	
+	},
 	clone: function(original) {
 		if (original instanceof Array) {
 			return original.map(function(single) {

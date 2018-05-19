@@ -269,14 +269,14 @@ nabu.services.SwaggerClient = function(parameters) {
 		}
 		var self = this;
 		if (element.schema && element.schema["$ref"]) {
-			element = nabu.utils.objects.clone(element);
+			element = nabu.utils.objects.deepClone(element);
 			if (!resolved[element.schema["$ref"]]) {
 				resolved[element.schema["$ref"]] = this.resolve(this.definition(element.schema["$ref"]), resolved);
 			}
 			element.schema = resolved[element.schema["$ref"]];
 		}
 		else if (element.items && element.items["$ref"]) {
-			element = nabu.utils.objects.clone(element);
+			element = nabu.utils.objects.deepClone(element);
 			if (!resolved[element.items["$ref"]]) {
 				resolved[element.items["$ref"]] = this.resolve(this.definition(element.items["$ref"]), resolved);
 			}
@@ -289,7 +289,7 @@ nabu.services.SwaggerClient = function(parameters) {
 			return resolved[element["$ref"]];
 		}
 		else if (element.properties) {
-			element = nabu.utils.objects.clone(element);
+			element = nabu.utils.objects.deepClone(element);
 			Object.keys(element.properties).map(function(key) {
 				element.properties[key] = self.resolve(element.properties[key], resolved);
 			});
