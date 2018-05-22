@@ -56,6 +56,10 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 		else if (typeof(value) == "undefined" || value == null) {
 			return null;
 		}
+		// if we don't do this, !!"false" actually results in true
+		else if (typeof(value) == "string" && value.toLowerCase() === "false") {
+			 return false;
+		}
 		else {
 			return !!value;
 		}

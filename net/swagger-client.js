@@ -111,7 +111,9 @@ nabu.services.SwaggerClient = function(parameters) {
 						parameters: operation.parameters,
 						path: path,
 						method: method,
-						responses: operation.responses
+						responses: operation.responses,
+						consumes: operation.consumers,
+						produces: operation.produces
 					}
 				});
 			});
@@ -263,7 +265,7 @@ nabu.services.SwaggerClient = function(parameters) {
 		return definition;
 	};
 	
-		this.resolve = function(element, resolved) {
+	this.resolve = function(element, resolved) {
 		if (!resolved) {
 			return this.resolve(element, {});
 		}
