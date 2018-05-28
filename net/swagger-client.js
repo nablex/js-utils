@@ -215,11 +215,14 @@ nabu.services.SwaggerClient = function(parameters) {
 		Object.keys(query).forEach(function (key) {
 			if (query[key] instanceof Array) {
 				for (var i = 0; i < query[key].length; i++) {
-					path += path.indexOf("?") >= 0 ? "&" : "?";
-					path += encodeURIComponent(key) + "=" + encodeURIComponent(query[key][i]);
+					// don't include null values
+					if (query[key][i] != null) {
+						path += path.indexOf("?") >= 0 ? "&" : "?";
+						path += encodeURIComponent(key) + "=" + encodeURIComponent(query[key][i]);
+					}
 				}
 			}
-			else {
+			else if (query[key] != null) {
 				path += path.indexOf("?") >= 0 ? "&" : "?";
 				path += encodeURIComponent(key) + "=" + encodeURIComponent(query[key]);
 			}
