@@ -56,6 +56,9 @@
 			}, 
 			"cookies.js": {
 				"url": "misc/cookies.js"
+			}, 
+			"batchResolver.js": {
+				"url": "misc/batchResolver.js"
 			}
 		}
 	}
