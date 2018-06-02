@@ -6,9 +6,12 @@ if (!nabu.utils.misc) { nabu.utils.misc = {}; }
 // the cacher should be able to store and update a result in such a way that it is reflected everywhere
 // the mapper (optional) should resolve the key from the resultset
 // 	if no mapper is present, we assume the result array is in the same order as the ids we resolved
-nabu.utils.misc.BatchResolver = function(resolver, generator, cacher, mapper, timeout) {
+nabu.utils.misc.BatchResolver = function(resolver, cacher, generator, mapper, timeout) {
 	if (!timeout) {
 		timeout = 50;
+	}
+	if (!generator) {
+		generator = function() { return  {} };
 	}
 	var toResolve = [];
 	var timer = null;
