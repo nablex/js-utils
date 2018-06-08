@@ -113,7 +113,7 @@ nabu.utils.elements = {
 			template.innerHTML = element;
 		}
 		recursiveStrip(template);
-		return returnAsString ? template.innerHTML : template;
+		return returnAsString ? element.innerHTML : template;
 	},
 	inlineCss: function(element, recursive, media, elementAcceptor, rules) {
 		if (!elementAcceptor) {

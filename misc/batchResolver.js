@@ -28,7 +28,7 @@ nabu.utils.misc.BatchResolver = function(resolver, cacher, generator, mapper, ti
 		var result = generator(key);
 		cacher(stringified, result);
 		toResolve.push(key);
-		setTimeout(function() {
+		timer = setTimeout(function() {
 			var keys = toResolve.splice(0, toResolve.length);
 			resolver(keys).then(function(result) {
 				var array = null;
@@ -42,13 +42,15 @@ nabu.utils.misc.BatchResolver = function(resolver, cacher, generator, mapper, ti
 				else {
 					array = result;
 				}
-				// if we have a mapper, update the keys array
-				if (mapper) {
-					keys = array.map(mapper);
-				}
-				// set it all in the cache
-				for (var i = 0; i < array.length; i++) {
-					cacher(keys[i], array[i]);
+				if (array) {
+					// if we have a mapper, update the keys array
+					if (mapper) {
+						keys = array.map(mapper);
+					}
+					// set it all in the cache
+					for (var i = 0; i < array.length; i++) {
+						cacher(keys[i], array[i]);
+					}
 				}
 			});
 		}, timeout);
