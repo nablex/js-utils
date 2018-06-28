@@ -87,7 +87,15 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 					result[key] = formatted;
 				}
 				else if (definition.required && definition.required.indexOf(key) >= 0) {
-					throw "Missing required element: " + key;
+					// if we have a required boolean that does not have a value, we set it to false
+					// this is to prevent the problem where a null-valued checkbox needs to be explicitly enabled and disabled to get "false"
+					// even though booleans should be false by default
+					if (definition.properties[key].type == "boolean") {
+						result[key] = false;
+					}
+					else {
+						throw "Missing required element: " + key;
+					}
 				}
 			}
 		}
