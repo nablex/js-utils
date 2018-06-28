@@ -227,7 +227,12 @@ nabu.services.Router = function(parameters) {
 			if (!parameters) {
 				parameters = {};
 			}
-			window.history.pushState({ alias: alias, anchor: anchor, parameters: parameters }, alias, url);
+			try {
+				window.history.pushState({ alias: alias, anchor: anchor, parameters: parameters }, alias, url);
+			}
+			catch (exception) {
+				// ignore, probably can't serialize it, no worries
+			}
 			self.previousUrl = self.getUrl();
 		}
 	};
@@ -235,7 +240,12 @@ nabu.services.Router = function(parameters) {
 	this.updateState = function(alias, parameters, query, anchor) {
 		// if we route directly to an element, we can't replay it
 		if (typeof(anchor) == "string") {
-			window.history.pushState({ alias: alias, anchor: anchor, parameters: parameters }, alias, self.getUrl());
+			try {
+				window.history.pushState({ alias: alias, anchor: anchor, parameters: parameters }, alias, self.getUrl());
+			}
+			catch (exception) {
+				// ignore, probably can't serialize it, no worries
+			}
 		}
 	};
 

@@ -150,7 +150,10 @@ nabu.utils.elements = {
 				}
 				result += css[i].replace(/.*\{[\s]*(.*)[\s]*\}.*/, "$1");
 			}
-			element.setAttribute("style", result);
+			if (!element.hasAttribute("original-style")) {
+				element.setAttribute("original-style", element.getAttribute("style") ? element.getAttribute("style") : " ");
+			}
+			element.setAttribute("style", element.getAttribute("original-style") + ";" + result);
 		}
 		
 		if (recursive) {
@@ -165,44 +168,49 @@ nabu.utils.elements = {
 		var result = [];
 		var sheets = document.styleSheets;
 		for (var l = 0; l < sheets.length; l++) {
-			var rules = sheets.item(l).rules || sheets.item(l).cssRules;
-			for (var i = 0; i < rules.length; i++) {
-				var rule = rules.item(i);
-				if (media && rule.media) {
-					var isCorrectMedia = false;
-					for (var j = 0; j < rule.media.length; j++) {
-						if (rule.media.item(j).toString() == media) {
-							isCorrectMedia = true;
-							break;
+			try {
+				var rules = sheets.item(l).rules || sheets.item(l).cssRules;
+				for (var i = 0; i < rules.length; i++) {
+					var rule = rules.item(i);
+					if (media && rule.media) {
+						var isCorrectMedia = false;
+						for (var j = 0; j < rule.media.length; j++) {
+							if (rule.media.item(j).toString() == media) {
+								isCorrectMedia = true;
+								break;
+							}
 						}
-					}
-					if (isCorrectMedia) {
-						// in new browsers, there is support for getting the rules inside the media
-						var mediaRules = rule.rules || rule.cssRules;
-						// otherwise we cheat
-						if (!mediaRules) {
-							var style = document.createElement("style");
-							style.setAttribute("type", "text/css");
-	//						style.appendChild(document.createTextNode(rule.cssText.replace(/@media.*?\{(.*)\}[\s]*/, "$1")));
-							style.innerHTML = rule.cssText.replace(/@media.*?\{[\s]*(.*)[\s]*\}[\s]*/, "$1");
-							document.head.appendChild(style);
-							mediaRules = document.styleSheets[document.styleSheets.length - 1].cssRules;
-							document.head.removeChild(style);
-						}
-						if (mediaRules) {
-							for (var k = 0; k < mediaRules.length; k++) {
-								if (mediaRules.item(k).selectorText) {
-									result.push(mediaRules.item(k));
+						if (isCorrectMedia) {
+							// in new browsers, there is support for getting the rules inside the media
+							var mediaRules = rule.rules || rule.cssRules;
+							// otherwise we cheat
+							if (!mediaRules) {
+								var style = document.createElement("style");
+								style.setAttribute("type", "text/css");
+		//						style.appendChild(document.createTextNode(rule.cssText.replace(/@media.*?\{(.*)\}[\s]*/, "$1")));
+								style.innerHTML = rule.cssText.replace(/@media.*?\{[\s]*(.*)[\s]*\}[\s]*/, "$1");
+								document.head.appendChild(style);
+								mediaRules = document.styleSheets[document.styleSheets.length - 1].cssRules;
+								document.head.removeChild(style);
+							}
+							if (mediaRules) {
+								for (var k = 0; k < mediaRules.length; k++) {
+									if (mediaRules.item(k).selectorText) {
+										result.push(mediaRules.item(k));
+									}
 								}
 							}
 						}
 					}
-				}
-				else if (!media) {
-					if (rule.selectorText) {
-						result.push(rule);
+					else if (!media) {
+						if (rule.selectorText) {
+							result.push(rule);
+						}
 					}
 				}
+			}
+			catch(exception) {
+				// ignore
 			}
 		}
 		return result;
