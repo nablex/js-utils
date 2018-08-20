@@ -16,6 +16,7 @@ nabu.services.SwaggerClient = function(parameters) {
 	this.parseError = parameters.parseError;
 	this.rememberHandler = parameters.remember;
 	this.remembering = false;
+	this.definitionProcessors = [];
 	
 	if (!this.executor) {
 		if (nabu.utils && nabu.utils.ajax) {
@@ -120,7 +121,18 @@ nabu.services.SwaggerClient = function(parameters) {
 		}
 		this.secure = this.swagger.schemes.indexOf("https") >= 0;
 		this.host = this.swagger.host && parameters.useHost ? (this.secure ? "https://" : "http://") + this.swagger.host : null;
+		for (var i = 0; i < this.definitionProcessors.length; i++) {
+			this.definitionProcessors[i](self);
+		}
 	}
+	
+	this.addDefinitionProcessor = function(processor) {
+		if (Object.keys(this.operations).length) {
+			processor(self);
+		}
+		this.definitionProcessors.push(processor);
+	}
+	
 	
 	// load the initial definition
 	if (parameters.definition) {
@@ -243,11 +255,17 @@ nabu.services.SwaggerClient = function(parameters) {
 	};
 	
 	this.execute = function(name, parameters, map) {
-		var executorParameters = self.parameters(name, parameters);
-		if (map) {
-			executorParameters.map = map;
+		var operation = self.operations[name];
+		if (operation.executor) {
+			return operation.executor(parameters, map);
 		}
-		return self.executor(executorParameters);
+		else {
+			var executorParameters = self.parameters(name, parameters);
+			if (map) {
+				executorParameters.map = map;
+			}
+			return self.executor(executorParameters);
+		}
 	};
 	
 	this.format = function(definition, value) {
