@@ -8,8 +8,7 @@ A route can be registered using the register:
 
 router.register({
 	alias: "theAliasForTheRoute",
-	enter: function(anchor, parameters, previousRoute, previousParameters),
-	leave: function(anchor, currentParameters, newRoute, newParameters),
+	enter: function(anchor, parameters),
 	url: "/path/to/{myVar}/{myOtherVar}
 });
 
@@ -25,16 +24,14 @@ It should return either a boolean indicating whether or not the route is allowed
 	mask: if none is given, the original mask boolean is used
 }
 
-When creating a router instance you can pass in a global enter/leave method.
+When creating a router instance you can pass in a global enter method.
 These global methods are called with exactly the same parameters as the route-specific enter/leaves but adds one more parameter at the end: the return of the specific enter/leave (if any)
 
-TODO:
-- differentiate the "current route" per anchor instead of globally
-- allow updates of the URL only if the route is in the default anchor
 */
 
 if (!nabu) { var nabu = {}; }
 if (!nabu.services) { nabu.services = {}; }
+if (!nabu.utils) { nabu.utils = {}; }
 
 nabu.services.Router = function(parameters) {
 	var self = this;
@@ -42,10 +39,7 @@ nabu.services.Router = function(parameters) {
 	this.useHash = parameters.useHash ? true : false;
 	// all the routes available
 	this.routes = [];
-	// the current route
-	this.current = {};
 	this.enter = parameters.enter ? parameters.enter : null;
-	this.leave = parameters.leave ? parameters.leave : null;
 	this.unknown = parameters.unknown ? parameters.unknown : null;
 	this.authorizer = parameters.authorizer ? parameters.authorizer : null;
 	this.chosen = parameters.chosen ? parameters.chosen : null;
@@ -54,23 +48,8 @@ nabu.services.Router = function(parameters) {
 	this.changingHash = false;
 	this.initials = [];
 
-	// listen to hash changes
-/*	window.addEventListener("hashchange", function() {
-		if (self.useHash) {
-			if (!self.changingHash) {
-				self.routeInitial();
-			}
-			else {
-				self.changingHash = false;
-			}
-		}
-	}, false);*/
 	
 	window.addEventListener("popstate", function(event) {
-/*		if (!self.useHash && self.previousUrl != window.location.pathname) {
-			self.routeInitial();
-			self.previousUrl = window.location.pathname;
-		}*/
 		var state = event.state;
 		var alias = state ? state.alias : null;
 		var anchor = state ? state.anchor : null;
@@ -119,7 +98,7 @@ nabu.services.Router = function(parameters) {
 			throw "Unknown route: " + alias;
 		}
 		if (self.authorizer) {
-			var result = self.authorizer(anchor, chosenRoute, parameters, self.current[anchor] ? self.current[anchor].route : null, self.current[anchor] ? self.current[anchor].parameters : null);
+			var result = self.authorizer(anchor, chosenRoute, parameters);
 			if (typeof(result) == "boolean" && !result) {
 				return false;
 			}
@@ -133,7 +112,7 @@ nabu.services.Router = function(parameters) {
 			}
 		}
 		if (self.chosen) {
-			var alternative = self.chosen(anchor, chosenRoute, parameters, self.current[anchor] ? self.current[anchor].route : null, self.current[anchor] ? self.current[anchor].parameters : null);
+			var alternative = self.chosen(anchor, chosenRoute, parameters);
 			if (alternative && alternative.route) {
 				chosenRoute = alternative.route;
 			}
@@ -144,21 +123,11 @@ nabu.services.Router = function(parameters) {
 				mask = alternative.mask;
 			}
 		}
-		var leaveReturn = null;
-		if (self.current[anchor] && self.current[anchor].route.leave) {
-			leaveReturn = self.current[anchor].route.leave(anchor, self.current[anchor].parameters, chosenRoute, parameters);
-		}
-		if (self.leave != null) {
-			self.leave(anchor, self.current[anchor] ? self.current[anchor].route : null, self.current[anchor] ? self.current[anchor].parameters : null, chosenRoute, parameters, leaveReturn);
-		}
-		var enterReturn = chosenRoute.enter(anchor, parameters, self.current[anchor] ? self.current[anchor].route : null, self.current[anchor] ? self.current[anchor].parameters : null);
+		
+		var enterReturn = chosenRoute.enter(anchor, parameters);
 		if (self.enter != null) {
-			self.enter(anchor, chosenRoute, parameters, self.current[anchor] ? self.current[anchor].route : null, self.current[anchor] ? self.current[anchor].parameters : null, enterReturn, mask);
+			self.enter(anchor, chosenRoute, parameters, enterReturn, mask);
 		}
-		self.current[anchor] = {
-			route: chosenRoute,
-			parameters: parameters
-		};
 		// update the current URL if the state has a URL attached to it
 		if (chosenRoute.url && !mask) {
 			self.updateUrl(chosenRoute.alias, chosenRoute.url, parameters, chosenRoute.query, anchor);
@@ -408,22 +377,21 @@ nabu.services.Router = function(parameters) {
 			self.initials.push(initial);
 			initial.route.enter("body", initial.parameters, null, null);
 		}
-		self.current[anchor] = current;
-		if (!self.current[anchor] && self.unknown) {
+		if (!current && self.unknown) {
 			var unknown = self.unknown(null, parameters, anchor);
 			if (unknown) {
-				self.current[anchor] = {
+				current = {
 					route: unknown,
 					parameters: parameters
 				};
 			}
 		}
-		if (!self.current[anchor]) {
+		if (!current) {
 			throw "Unknown initial route";
 		}
-		if (self.current[anchor] != null) {
+		if (current != null) {
 			if (self.authorizer) {
-				var result = self.authorizer(anchor, self.current[anchor].route, self.current[anchor].parameters, null, null);
+				var result = self.authorizer(anchor, current.route, current.parameters, null, null);
 				if (typeof(result) == "object" && result) {
 					var alternativeRoute = self.findByAlias(
 						result.alias,
@@ -434,7 +402,7 @@ nabu.services.Router = function(parameters) {
 					if (alternativeRoute == null) {
 						throw "Could not find alternative route: " + result.alias;
 					}
-					self.current[anchor] = {
+					current = {
 						route: alternativeRoute,
 						parameters: result.parameters
 					}
@@ -450,31 +418,31 @@ nabu.services.Router = function(parameters) {
 				}
 			}
 			if (self.chosen) {
-				var alternative = self.chosen(anchor, self.current[anchor].route, parameters ? parameters : self.current[anchor].parameters, null, null);
+				var alternative = self.chosen(anchor, current.route, parameters ? parameters : current.parameters, null, null);
 				if (alternative && alternative.route) {
-					self.current[anchor].route = alternative.route;
+					current.route = alternative.route;
 				}
 				if (alternative && alternative.parameters) {
 					if (parameters) {
 						parameters = alternative.parameters;
 					}
 					else {
-						self.current[anchor].parameters = alternative.parameters;
+						current.parameters = alternative.parameters;
 					}
 				}
 			}
-			var enterReturn = self.current[anchor].route.enter(anchor, self.current[anchor].parameters, null, null);
+			var enterReturn = current.route.enter(anchor, current.parameters, null, null);
 			if (self.enter != null) {
-				self.enter(anchor, self.current[anchor].route, parameters ? parameters : self.current[anchor].parameters, null, null, enterReturn);
+				self.enter(anchor, current.route, parameters ? parameters : current.parameters, null, null, enterReturn);
 				if (updateUrl) {
-					self.updateUrl(self.current[anchor].route.alias, self.current[anchor].route.url, parameters);	
+					self.updateUrl(current.route.alias, current.route.url, parameters);	
 				}
 				else {
-					self.updateState(self.current[anchor].route.alias, parameters ? parameters : self.current[anchor].parameters, self.current[anchor].query, anchor);
+					self.updateState(current.route.alias, parameters ? parameters : current.parameters, current.query, anchor);
 				}
 			}
 		}
-		return self.current[anchor].route;
+		return current.route;
 	};
 	
 	this.findByAlias = function(alias, parameters, anchor, initial) {
@@ -511,4 +479,22 @@ nabu.services.Router = function(parameters) {
 	};
 
 	this.previousUrl = this.getUrl();
+}
+
+nabu.utils.router = {
+	// get the anchor to render in
+	anchor: function(anchor) {
+		var element = typeof(anchor) === "object" ? anchor : document.getElementById(anchor);
+		if (!element && anchor == "body") {
+			element = document.body;
+		}
+		return element;
+	},
+	// get the current rendering target you are in
+	self: function(element) {
+		while (element && !element.hasAttribute("route")) {
+			element = element.parentNode;
+		}
+		return element;
+	}
 }

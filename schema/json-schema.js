@@ -211,7 +211,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 	}
 	
 	if (!definition) {
-		if (required && (typeof(value) == "undefined" || value == null || value == "")) {
+		if (required && (typeof(value) == "undefined" || value == null || value === "")) {
 			missing();
 		}
 		return messages;
@@ -360,7 +360,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 	// the string checks can be done on all of these
 	if (definition.type == "string" || definition.type == "number" || definition.type == "integer" || !definition.type) {
 		// empty strings are interpreted as null
-		if (!value) {
+		if (value == null || value === "") {
 			missing();
 		}
 		else {
