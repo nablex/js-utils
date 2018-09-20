@@ -158,6 +158,7 @@ nabu.services.SwaggerClient = function(parameters) {
 		var query = {};
 		var headers = {};
 		var data = null;
+		var pathParameters = {};
 		for (var i = 0; i < operation.parameters.length; i++) {
 			// we don't check header parameters as they may be injected by the browser and or ajax library
 			if (operation.parameters[i].required && operation.parameters[i].in != "header" && (!parameters || typeof(parameters[operation.parameters[i].name]) == "undefined" || parameters[operation.parameters[i].name] == null)) {
@@ -202,6 +203,7 @@ nabu.services.SwaggerClient = function(parameters) {
 				}
 				if (operation.parameters[i].in == "path") {
 					path = path.replace(new RegExp("\{[\\s]*" + operation.parameters[i].name + "[^}]*\}"), value);
+					pathParameters[operation.parameters[i].name] = value;
 				}
 				else if (value != null && value !== "" && typeof(value) != "undefined") {
 					if (operation.parameters[i].in == "query") {
@@ -250,7 +252,8 @@ nabu.services.SwaggerClient = function(parameters) {
 			url: path,
 			data: data,
 			headers: headers,
-			definition: definition
+			definition: definition,
+			path: pathParameters
 		};
 	};
 	
