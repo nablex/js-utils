@@ -272,7 +272,15 @@ nabu.services.Router = function(parameters) {
 								if (chosenRoute.query.indexOf(values[0]) >= 0) {
 									var key = values[0];
 									values.splice(0, 1);
-									parameters[key] = values.join("=");
+									if (parameters[key] != null) {
+										if (!(parameters[key] instanceof Array)) {
+											parameters[key] = [parameters[key]];
+										}
+										parameters[key].push(values.join("="));
+									}
+									else {
+										parameters[key] = values.join("=");
+									}
 								}
 							}
 						}
