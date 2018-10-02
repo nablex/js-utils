@@ -253,7 +253,8 @@ nabu.services.SwaggerClient = function(parameters) {
 			data: data,
 			headers: headers,
 			definition: definition,
-			path: pathParameters
+			path: pathParameters,
+			query: query
 		};
 	};
 	
