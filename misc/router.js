@@ -124,7 +124,7 @@ nabu.services.Router = function(parameters) {
 			}
 		}
 		
-		var enterReturn = chosenRoute.enter(anchor, parameters);
+		var enterReturn = chosenRoute.enter(anchor, parameters, mask);
 		if (self.enter != null) {
 			self.enter(anchor, chosenRoute, parameters, enterReturn, mask);
 		}
