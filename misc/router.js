@@ -304,6 +304,11 @@ nabu.services.Router = function(parameters) {
 		if (url.length >= root.length && url.substring(0, root.length) == root) {
 			url = "/" + url.substring(root.length);
 		}
+		// the root always ends on "/" for predictability, however, the url itself might not end in a "/", it is optional for the root page
+		// in that case, we actually match the root minus the trailing "/", this means home
+		else if (url.length == root.length - 1 && url == root.substring(0, root.length - 1)) {
+			url = "/";
+		}
 		return url;
 	};
 
