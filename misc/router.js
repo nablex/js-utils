@@ -175,7 +175,7 @@ nabu.services.Router = function(parameters) {
 				}
 			}
 		}
-		return self.useHash && url.substring(0, 1) != "#" ? "#" + url : url;
+		return self.useHash && url.substring(0, 1) != "#" ? "#" + url : "${server.root()}" + url.replace(/^[/]+/, "");
 	};
 	
 	this.getUrl = function() {
@@ -299,6 +299,14 @@ nabu.services.Router = function(parameters) {
 		};
 	};
 
+	this.localizeUrl = function(url) {
+		var root = "${server.root()}";
+		if (url.length >= root.length && url.substring(0, root.length) == root) {
+			url = "/" + url.substring(root.length);
+		}
+		return url;
+	};
+
 	this.routeInitial = function(anchor, parameters, mask) {
 		var initial = null;
 		// check for initial route to build framework around data
@@ -306,7 +314,7 @@ nabu.services.Router = function(parameters) {
 			initial = self.findRoute(window.location.hash && window.location.hash.length > 1 ? window.location.hash.substring(1) : "/", true);
 		}
 		else {
-			initial = self.findRoute(window.location.pathname ? window.location.pathname : "/", true);
+			initial = self.findRoute(self.localizeUrl(window.location.pathname ? window.location.pathname : "/"), true);
 		}
 		var current = null;
 		// check for actual data route
@@ -314,7 +322,7 @@ nabu.services.Router = function(parameters) {
 			current = self.findRoute(window.location.hash && window.location.hash.length > 1 ? window.location.hash.substring(1) : "/");
 		}
 		else {
-			current = self.findRoute(window.location.pathname ? window.location.pathname : "/");
+			current = self.findRoute(self.localizeUrl(window.location.pathname ? window.location.pathname : "/"));
 		}
 		self.routePage(initial, current, parameters, anchor, mask);
 	};

@@ -166,7 +166,7 @@ nabu.services.SwaggerClient = function(parameters) {
 			}
 			if (parameters && parameters.hasOwnProperty(operation.parameters[i].name)) {
 				var value = parameters[operation.parameters[i].name];
-				if (operation.parameters[i].schema && !(value instanceof File)) {
+				if (operation.parameters[i].schema && !(value instanceof File) && !(value instanceof Blob)) {
 					value = this.format(operation.parameters[i].schema, value);
 				}
 				// for query parameters etc, they might not have a schema
@@ -258,7 +258,7 @@ nabu.services.SwaggerClient = function(parameters) {
 		};
 	};
 	
-	this.execute = function(name, parameters, map) {
+	this.execute = function(name, parameters, map, async) {
 		var operation = self.operations[name];
 		if (operation.executor) {
 			return operation.executor(parameters, map);
@@ -267,6 +267,9 @@ nabu.services.SwaggerClient = function(parameters) {
 			var executorParameters = self.parameters(name, parameters);
 			if (map) {
 				executorParameters.map = map;
+			}
+			if (async != null) {
+				executorParameters.async = async;
 			}
 			return self.executor(executorParameters);
 		}

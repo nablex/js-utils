@@ -110,7 +110,7 @@ nabu.utils.ajax = function(parameters) {
 		}
 	}
 
-	if (!parameters.async) {
+	if (parameters.async == null) {
 		parameters.async = true;
 	}
 
@@ -214,13 +214,13 @@ nabu.utils.ajax = function(parameters) {
 	}
 
 	if (!acceptHeader) {
-		request.setRequestHeader("Accept", "application/json, text/html");
+		request.setRequestHeader("Accept", "application/json");		//, text/html
 	}
 
 	// need to add these headers for post
 	if (parameters.method.toUpperCase() == "POST" || parameters.method.toUpperCase() == "PUT" || parameters.method.toUpperCase() == "DELETE" || parameters.method.toUpperCase() == "PATCH") {
 		// if we are sending an object as data, jsonify it
-		if (parameters.data && typeof(parameters.data) == "object" && !(parameters.data instanceof File)) {
+		if (parameters.data && typeof(parameters.data) == "object" && !(parameters.data instanceof File) && !(parameters.data instanceof Blob)) {
 			parameters.data = JSON.stringify(parameters.data);
 			parameters.contentType = "application/json";
 		}
@@ -239,6 +239,11 @@ nabu.utils.ajax = function(parameters) {
 					}
 				}
 			}
+			if (!parameters.contentType) {
+				parameters.contentType = "application/octet-stream";
+			}
+		}
+		else if (parameters.data instanceof Blob) {
 			if (!parameters.contentType) {
 				parameters.contentType = "application/octet-stream";
 			}
