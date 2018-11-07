@@ -329,7 +329,7 @@ nabu.services.Router = function(parameters) {
 		else {
 			current = self.findRoute(self.localizeUrl(window.location.pathname ? window.location.pathname : "/"));
 		}
-		self.routePage(initial, current, parameters, anchor, mask);
+		return self.routePage(initial, current, parameters, anchor, mask);
 	};
 	
 	this.routeAll = function(alias, parameters, anchor, mask) {
@@ -462,8 +462,9 @@ nabu.services.Router = function(parameters) {
 					self.updateState(current.route.alias, parameters ? parameters : current.parameters, current.query, anchor);
 				}
 			}
+			return enterReturn;
 		}
-		return current.route;
+		return null;
 	};
 	
 	this.findByAlias = function(alias, parameters, anchor, initial) {
