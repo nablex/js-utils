@@ -179,7 +179,7 @@ nabu.services.Router = function(parameters) {
 	};
 	
 	this.getUrl = function() {
-		var url = self.useHash ? window.location.hash : window.location.pathname;
+		var url = self.useHash ? window.location.hash : window.location.pathname + (window.location.search ? window.location.search : "");
 		if (self.useHash && url.substring(0, 1) != "#") {
 			url = "#" + url;
 		}
