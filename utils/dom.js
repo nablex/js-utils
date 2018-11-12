@@ -65,15 +65,22 @@ nabu.utils.elements = {
 			element = div;
 		}
 	
-		var removeAttributes = function (element) {
-			for( var i = element.attributes.length - 1; i >= 0; i-- ) {
-				element.removeAttribute(element.attributes[i].name);
+		var removeAttributes = function (child) {
+			if (allowedAttributes || attributesToRemove) {
+				for (var j = child.attributes.length - 1; j >= 0; j--) {
+					var attr = child.attributes.item(j);
+					if (allowedAttributes && allowedAttributes.indexOf(attr.name) < 0) {
+						child.removeAttribute(attr.name);
+					}
+					else if (attributesToRemove && attributesToRemove.indexOf(attr.name) >= 0) {
+						child.removeAttribute(attr.name);
+					}
+				}
 			}
 		};
 
 		var recursiveStrip = function (element) {
-			// very odd line, perhaps from before there was a white/blacklist?
-			//removeAttributes(element);
+			removeAttributes(element);
 			for (var i = element.childNodes.length - 1; i >= 0; i--) {
 				if (element.childNodes[i].nodeType == 1) {
 					if (tagsToRemove && tagsToRemove.indexOf(element.childNodes[i].nodeName.toLowerCase()) >= 0) {
@@ -83,17 +90,6 @@ nabu.utils.elements = {
 						recursiveStrip(element.childNodes[i]);
 						if (!allowedTags || allowedTags.indexOf(element.childNodes[i].nodeName.toLowerCase()) < 0) {
 							var child = element.childNodes[i];
-							if (allowedAttributes || attributesToRemove) {
-								for (var j = child.attributes.length - 1; j >= 0; j--) {
-									var attr = child.attributes.item(j);
-									if (allowedAttributes && allowedAttributes.indexOf(attr.name) < 0) {
-										child.removeAttribute(attr.name);
-									}
-									else if (attributesToRemove && attributesToRemove.indexOf(attr.name) >= 0) {
-										child.removeAttribute(attr.name);
-									}
-								}
-							}
 							var insertRef = child;
 							for (var j = child.childNodes.length - 1; j >= 0; j--) {
 								insertRef = element.insertBefore(child.childNodes[j], insertRef);
