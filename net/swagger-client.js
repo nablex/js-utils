@@ -41,7 +41,7 @@ nabu.services.SwaggerClient = function(parameters) {
 					var requireAuthentication = error.status == 401;
 					if (self.parseError) {
 						var contentType = error.getResponseHeader("Content-Type");
-						if (contentType && contentType.indexOf("application/json") >= 0) {
+						if (contentType && (contentType.indexOf("application/json") >= 0 || contentType.indexOf("application/problem+json") >= 0)) {
 							error = JSON.parse(error.responseText);
 						}
 					}

@@ -78,6 +78,10 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 		return result;
 	}
 	else if (definition.type == "object") {
+		// if we have no value, don't create an empty object
+		if (value == null) {
+			return null;
+		}
 		var result = {};
 		if (definition.properties) {
 			for (var key in definition.properties) {
