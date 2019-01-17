@@ -17,6 +17,11 @@ nabu.utils.schema.addAsyncValidation = function(validations, promise, mapper) {
 			return nabu.utils.schema.addAsyncValidation(originalMap.apply(validations, arguments));
 		}
 	}
+	if (validations.async == null) {
+		validations.async = function(promise, mapper) {
+			return nabu.utils.schema.addAsyncValidation(validations, promise, mapper);
+		}
+	}
 	if (promise != null) {
 		// we add the result of the promise to the validations themselves
 		promise.then(function(result) {
