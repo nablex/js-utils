@@ -27,6 +27,7 @@ nabu.utils.schema.addAsyncValidation: function(validations, promise, mapper) {
 			return promise;
 		}
 	}
+	return validations;
 };
 	
 // formats a value according to the definition
