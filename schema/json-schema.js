@@ -6,6 +6,16 @@ if (!nabu.utils.schema.json) { nabu.utils.schema.json = {} }
 nabu.utils.schema.addAsyncValidation: function(validations, promise, mapper) {
 	if (validations.promises == null) {
 		validations.promises = [];
+		
+		var originalFilter = validations.filter;
+		validations.filter = function() {
+			return nabu.utils.schema.addAsyncValidation(originalFilter.apply(validations, arguments));
+		}
+		
+		var originalMap = validations.map;
+		validations.map = function() {
+			return nabu.utils.schema.addAsyncValidation(originalMap.apply(validations, arguments));
+		}
 	}
 	if (promise != null) {
 		// we add the result of the promise to the validations themselves
