@@ -26,6 +26,26 @@ nabu.utils.schema.addAsyncValidation = function(validations, promise, mapper) {
 		// we add the result of the promise to the validations themselves
 		promise.then(function(result) {
 			result = mapper != null && result != null ? mapper(result) : result;
+			// we support the default result array from the backend
+			// where unfortunately we have  "message" instead of a "title". where and when this discrepancy was introduced is unclear
+			if (result != null && !(result instanceof Array)) {
+				Object.keys(result).forEach(function(key) {
+					if (result != null && !(result instanceof Array) && result[key] instanceof Array) {
+						result = result[key].map(function(x) {
+							if (x.title == null && x.message != null) {
+								x.title = x.message;
+							}
+							if (x.severity != null) {
+								x.severity = x.severity.toLowerCase();
+							}
+							return x;
+						});
+						result = result.filter(function(x) {
+							return x.severity == "error";
+						});
+					}
+				});
+			}
 			if (result instanceof Array && result.length > 0) {
 				nabu.utils.arrays.merge(validations, result);
 			}
