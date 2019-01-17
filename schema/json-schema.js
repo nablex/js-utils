@@ -3,6 +3,32 @@ if (!nabu.utils) { nabu.utils = {} }
 if (!nabu.utils.schema) { nabu.utils.schema = {} }
 if (!nabu.utils.schema.json) { nabu.utils.schema.json = {} }
 
+nabu.utils.schema.addAsyncValidation: function(validations, promise, mapper) {
+	if (validations.promises == null) {
+		validations.promises = [];
+	}
+	if (promise != null) {
+		// we add the result of the promise to the validations themselves
+		promise.then(function(result) {
+			result = mapper != null && result != null ? mapper(result) : result;
+			if (result instanceof Array && result.length > 0) {
+				nabu.utils.arrays.merge(validations, result);
+			}
+		});
+		// we add the promise so we can wait on it after
+		validations.promises.push(promise);
+	}
+	if (validations.then == null) {
+		validations.then = function(successHandler, errorHandler, progressHandler) {
+			var promise = new nabu.utils.promise();
+			new nabu.utils.promises(validations.promises).then(function() {
+				promise.resolve(validations);
+			}, errorHandler, progressHandler);
+			return promise;
+		}
+	}
+};
+	
 // formats a value according to the definition
 // will throw an exception if the value is not valid according to the schema
 nabu.utils.schema.json.format = function(definition, value, resolver) {
@@ -443,5 +469,6 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			}
 		}
 	}
+	nabu.utils.schema.addAsyncValidation(messages);
 	return messages;
 };

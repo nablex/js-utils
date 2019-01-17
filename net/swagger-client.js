@@ -297,6 +297,9 @@ nabu.services.SwaggerClient = function(parameters) {
 		if (!resolved) {
 			return this.resolve(element, {});
 		}
+		if (typeof(element) == "string") {
+			element = this.definition(element);
+		}
 		var self = this;
 		if (element.schema && element.schema["$ref"]) {
 			element = nabu.utils.objects.deepClone(element);
