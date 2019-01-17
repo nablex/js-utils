@@ -3,7 +3,7 @@ if (!nabu.utils) { nabu.utils = {} }
 if (!nabu.utils.schema) { nabu.utils.schema = {} }
 if (!nabu.utils.schema.json) { nabu.utils.schema.json = {} }
 
-nabu.utils.schema.addAsyncValidation: function(validations, promise, mapper) {
+nabu.utils.schema.addAsyncValidation = function(validations, promise, mapper) {
 	if (validations.promises == null) {
 		validations.promises = [];
 		
