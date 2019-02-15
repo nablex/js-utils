@@ -113,7 +113,7 @@ nabu.services.SwaggerClient = function(parameters) {
 						path: path,
 						method: method,
 						responses: operation.responses,
-						consumes: operation.consumers,
+						consumes: operation.consumes,
 						produces: operation.produces
 					}
 				});
@@ -246,7 +246,7 @@ nabu.services.SwaggerClient = function(parameters) {
 		if (definition && definition.$ref) {
 			definition = this.definition(definition.$ref);
 		}
-		return {
+		var result = {
 			method: operation.method,
 			host: self.host,
 			url: path,
@@ -256,6 +256,11 @@ nabu.services.SwaggerClient = function(parameters) {
 			path: pathParameters,
 			query: query
 		};
+		// if the operation only accepts octet-stream, let's do that
+		if (operation.consumes && operation.consumes.length == 1 && operation.consumes[0] == "application/octet-stream") {
+			result.contentType = "application/octet-stream";
+		}
+		return result;
 	};
 	
 	this.execute = function(name, parameters, map, async) {
