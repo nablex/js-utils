@@ -85,8 +85,11 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 		else if (definition.format == "date-time" && value instanceof Date) {
 			return value.toISOString();
 		}
+		if (value === false) {
+			return "false";
+		}
 		// empty strings are interpreted as null
-		if (!value) {
+		else if (!value) {
 			return null;
 		}
 		else {
