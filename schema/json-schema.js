@@ -190,7 +190,7 @@ nabu.utils.schema.json.normalize = function(definition, value, resolver, createN
 			return null;
 		}
 	}
-	else if (definition.type == "object") {
+	else if (definition.type == "object" || (definition.type == null && definition.properties)) {
 		if (definition.properties) {
 			for (key in definition.properties) {
 				if (typeof(value[key]) == "undefined") {
@@ -219,6 +219,9 @@ nabu.utils.schema.json.normalize = function(definition, value, resolver, createN
 	}
 	else if (value && definition.type == "string" && (definition.format == "date" || definition.format == "date-time")) {
 		value = new Date(value);
+	}
+	else if (typeof(value) == "string" && definition.type == "boolean") {
+		value = value == "true";
 	}
 	return value;
 }

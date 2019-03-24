@@ -53,7 +53,7 @@ nabu.utils.elements = {
 	sanitize: function(element) {
 		var allowedTags = ["a", "b", "i", "u", "em", "strong", "h1", "h2", "h3", "h4", "h5", "h6", "h7", "p", "table", "ul", 
 			"li", "tr", "td", "thead", "tbody", "th", "ol", "font", "br", "span", "div"];
-		var allowedAttributes = ["style"];
+		var allowedAttributes = ["style", "href", "target", "rel"];
 		return nabu.utils.elements.clean(element, allowedTags, null, allowedAttributes);
 	},
 	clean: function(element, allowedTags, tagsToRemove, allowedAttributes, attributesToRemove) {
