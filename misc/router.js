@@ -43,11 +43,13 @@ nabu.services.Router = function(parameters) {
 	this.unknown = parameters.unknown ? parameters.unknown : null;
 	this.authorizer = parameters.authorizer ? parameters.authorizer : null;
 	this.chosen = parameters.chosen ? parameters.chosen : null;
+	this.useParents = parameters.useParents ? true : false;
 
 	this.previousUrl = null;
 	this.changingHash = false;
 	this.initials = [];
-
+	
+	this.parents = [];
 	
 	window.addEventListener("popstate", function(event) {
 		var state = event.state;
@@ -57,7 +59,7 @@ nabu.services.Router = function(parameters) {
 		if (!alias) {
 			self.routeInitial(anchor, state ? state.parameters : null, true);
 		}
-		else if (initial) {
+		else if (initial && !self.useParents) {
 			self.routeAll(alias, state ? state.parameters : null, anchor, false);
 		}
 		else {
@@ -80,7 +82,9 @@ nabu.services.Router = function(parameters) {
 	};
 
 	// route to a new alias
-	this.route = function(alias, parameters, anchor, mask) {
+	this.route = function(alias, parameters, anchor, mask, initial) {
+		// we do it this way to preserve backwards compatibility
+		var anchorEmpty = !anchor;
 		if (!anchor) {
 			anchor = self.defaultAnchor;
 		}
@@ -111,6 +115,15 @@ nabu.services.Router = function(parameters) {
 				);
 			}
 		}
+		
+		// if we are using parents, we need the correct anchor for the chosen
+		if (self.useParents && chosenRoute.parent != null && anchorEmpty) {
+			var parent = self.get(chosenRoute.parent);
+			if (parent && parent.defaultAnchor) {
+				anchor = parent.defaultAnchor;
+			}
+		}
+		
 		if (self.chosen) {
 			var alternative = self.chosen(anchor, chosenRoute, parameters);
 			if (alternative && alternative.route) {
@@ -124,12 +137,39 @@ nabu.services.Router = function(parameters) {
 			}
 		}
 		
+		// if we are in need of a parent construct for this route, build it (or reuse it)
+		if (self.useParents) {
+			var parentAlias = chosenRoute.parent;
+			// if it is an initial route and we don't have a parent, we want to search for a generic initial skeleton (both for backwards compatibility and less explicit configuration)
+			// note that if we are doing a non-masked route on a bookmarkable url (so we are about to update the url), we _force_ the existence of a parent as well
+			// this to allow us to be consistent when the bookmarkable url is refreshed upon
+			if (!parentAlias && (initial || (!mask && chosenRoute.url))) {
+				var initialRoute = self.getInitial(anchor, parameters, mask);
+				if (initialRoute) {
+					parentAlias = initialRoute.route.alias;
+				}
+			}
+			if (parentAlias) {
+				var parentAnchor = this.routeParent(parentAlias, parameters);
+				// if we didn't specify an anchor to route in, use the parent anchor
+				if (anchorEmpty) {
+					anchor = parentAnchor;
+				}
+			}
+			// if we have no explicit parent, we need to route in the currently available parent, that means _its_ default anchor (if any)
+			else {
+				if (anchorEmpty && self.parents.length > 0 && self.parents[self.parents.length - 1].defaultAnchor) {
+					anchor = self.parents[self.parents.length - 1].defaultAnchor;
+				}
+			}
+		}
+		
 		var enterReturn = chosenRoute.enter(anchor, parameters, mask);
 		if (self.enter != null) {
 			self.enter(anchor, chosenRoute, parameters, enterReturn, mask);
 		}
-		// update the current URL if the state has a URL attached to it
-		if (chosenRoute.url && !mask) {
+		// update the current URL if the state has a URL attached to it (don't update if initial, we use keep using that url)
+		if (chosenRoute.url && !mask && !initial) {
 			self.updateUrl(chosenRoute.alias, chosenRoute.url, parameters, chosenRoute.query, anchor);
 		}
 		else {
@@ -137,6 +177,43 @@ nabu.services.Router = function(parameters) {
 		}
 		self.initials.push(null);
 		return enterReturn;
+	};
+	
+	this.routeParent = function(alias, parameters) {
+		var parentRoute = this.get(alias);
+		if (!parentRoute) {
+			throw "Could not find parent route: " + alias;
+		}
+
+		var alreadyRouted = false;		
+		// first check if we have the parent routed in the current stack
+		for (var i = this.parents.length - 1; i >= 0; i--) {
+			if (this.parents[i].alias == alias) {
+				// remove the other parents after this
+				if (i < this.parents.length - 1) {
+					this.parents.splice(i + 1);
+				}
+				alreadyRouted = true;
+				break;
+			}
+		}
+		
+		// this particular parent is not yet routed, check if it itself has a parent
+		if (!alreadyRouted) {
+			// if we have no parent, we are assumed to route in the body
+			var anchor = parentRoute.parent != null ? self.routeParent(parentRoute.parent, parameters) : "body";
+			if (anchor == "body") {
+				// clear all the parents, we are starting over
+				self.parents.splice(0);
+			}
+			// always mask parent routes
+			parentRoute.enter(anchor, parameters, true);
+			// TODO: might need to differentiate if we want the same parent but with different parameters!
+			self.parents.push(parentRoute);
+		}
+		
+		// because we are routing new content, whatever parents were routed in the "default" tag of the current parent will be overwritten on route
+		return parentRoute.defaultAnchor ? parentRoute.defaultAnchor : self.defaultAnchor;
 	};
 	
 	this.template = function(alias, parameters) {
@@ -311,8 +388,8 @@ nabu.services.Router = function(parameters) {
 		}
 		return url;
 	};
-
-	this.routeInitial = function(anchor, parameters, mask) {
+	
+	this.getInitial = function(anchor, parameters, mask) {
 		var initial = null;
 		// check for initial route to build framework around data
 		if (self.useHash) {
@@ -321,6 +398,10 @@ nabu.services.Router = function(parameters) {
 		else {
 			initial = self.findRoute(self.localizeUrl(window.location.pathname ? window.location.pathname : "/"), true);
 		}
+		return initial;
+	};
+
+	this.routeInitial = function(anchor, parameters, mask) {
 		var current = null;
 		// check for actual data route
 		if (self.useHash) {
@@ -329,7 +410,13 @@ nabu.services.Router = function(parameters) {
 		else {
 			current = self.findRoute(self.localizeUrl(window.location.pathname ? window.location.pathname : "/"));
 		}
-		return self.routePage(initial, current, parameters, anchor, mask);
+		if (self.useParents) {
+			self.route(current.route.alias, current.parameters, anchor, mask, true);
+		}
+		else {
+			var initial = self.getInitial(anchor, parameters, mask);
+			return self.routePage(initial, current, parameters, anchor, mask);
+		}
 	};
 	
 	this.routeAll = function(alias, parameters, anchor, mask) {
@@ -385,7 +472,7 @@ nabu.services.Router = function(parameters) {
 						true
 					);
 					if (initial == null) {
-						throw "Coult not find initial route: " + result.alias;
+						throw "Could not find initial route: " + result.alias;
 					}
 					else {
 						initial = {
