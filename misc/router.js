@@ -148,6 +148,11 @@ nabu.services.Router = function(parameters) {
 				if (initialRoute) {
 					parentAlias = initialRoute.route.alias;
 				}
+				// if we don't have a parent, no hard feelings, but we assume that we need to mount in the body then
+				else {
+					anchor = "body";
+					self.parents.splice(0);
+				}
 			}
 			if (parentAlias) {
 				var parentAnchor = this.routeParent(parentAlias, parameters);
@@ -160,6 +165,10 @@ nabu.services.Router = function(parameters) {
 			else {
 				if (anchorEmpty && self.parents.length > 0 && self.parents[self.parents.length - 1].defaultAnchor) {
 					anchor = self.parents[self.parents.length - 1].defaultAnchor;
+				}
+				// if we have no noteworthy parents, root in body
+				else if (anchorEmpty && self.parents.length == 0) {
+					anchor = "body";
 				}
 			}
 		}
