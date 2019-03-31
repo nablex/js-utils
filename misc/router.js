@@ -89,9 +89,10 @@ nabu.services.Router = function(parameters) {
 			anchor = self.defaultAnchor;
 		}
 		var chosenRoute = null;
-		for (var i = 0; i < self.routes.length; i++) {
-			if (self.routes[i].alias == alias && !self.routes[i].initial) {
-				chosenRoute = self.routes[i];
+		var routes = self.sort();
+		for (var i = 0; i < routes.length; i++) {
+			if (routes[i].alias == alias && !routes[i].initial) {
+				chosenRoute = routes[i];
 				break;
 			}
 		}
@@ -420,7 +421,7 @@ nabu.services.Router = function(parameters) {
 			current = self.findRoute(self.localizeUrl(window.location.pathname ? window.location.pathname : "/"));
 		}
 		if (self.useParents) {
-			self.route(current.route.alias, current.parameters, anchor, mask, true);
+			return self.route(current.route.alias, current.parameters, anchor, mask, true);
 		}
 		else {
 			var initial = self.getInitial(anchor, parameters, mask);
