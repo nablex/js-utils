@@ -302,7 +302,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 		});
 	}
 	var minLength = function(value, minLength) {
-		if (typeof(minLength) !== "undefined" && result.length < minLength) {
+		if (minLength != null && result.length < minLength) {
 			messages.push({
 				severity: "error",
 				code: "minLength",
@@ -317,7 +317,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 		}
 	}
 	var maxLength = function(value, maxLength) {
-		if (typeof(minLength) !== "undefined" && result.length > maxLength) {
+		if (maxLength != null && result.length > maxLength) {
 			messages.push({
 				severity: "error",
 				code: "maxLength",
@@ -332,7 +332,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 		}
 	}
 	var pattern = function(value, pattern, patternComment) {
-		if (typeof(pattern) !== "undefined" && !result.match(pattern)) {
+		if (pattern != null && !result.match(pattern)) {
 			messages.push({
 				severity: "error",
 				code: "pattern",
@@ -347,7 +347,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 		}
 	}
 	var maximum = function(value, maximum, exclusiveMaximum) {
-		if (typeof(value) !== "undefined" && ( (typeof(exclusiveMaximum) !== "undefined" && value >= exclusiveMaximum) || (typeof(maximum) !== "undefined" && value > maximum) )) {
+		if (value != null && ( (exclusiveMaximum != null && value >= exclusiveMaximum) || (maximum != null && value > maximum) )) {
 			messages.push({
 				severity: "error",
 				code: "maximum",
@@ -363,7 +363,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 		}
 	}
 	var minimum = function(value, minimum, exclusiveMinimum) {
-		if (typeof(value) !== "undefined" && ( (typeof(exclusiveMinimum) !== "undefined" && value <= exclusiveMinimum) || (typeof(minimum) !== "undefined" && value < minimum) )) {
+		if (value != null && ( (exclusiveMinimum != null && value <= exclusiveMinimum) || (minimum != null && value < minimum) )) {
 			messages.push({
 				severity: "error",
 				code: "minimum",
@@ -394,7 +394,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 		}
 	}
 	var maxItems = function(value, maxItems) {
-		if (typeof(maxItems) !== "undefined" && value.length > maxItems) {
+		if (maxItems != null && value.length > maxItems) {
 			messages.push({
 				severity: "error",
 				code: "maxItems",
@@ -409,7 +409,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 		}
 	}
 	var minItems = function(value, minItems) {
-		if (typeof(minItems) !== "undefined" && value.length < minItems) {
+		if (minItems != null && value.length < minItems) {
 			messages.push({
 				severity: "error",
 				code: "minItems",

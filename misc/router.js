@@ -125,19 +125,7 @@ nabu.services.Router = function(parameters) {
 			}
 		}
 		
-		if (self.chosen) {
-			var alternative = self.chosen(anchor, chosenRoute, parameters);
-			if (alternative && alternative.route) {
-				chosenRoute = alternative.route;
-			}
-			if (alternative && alternative.parameters) {
-				parameters = alternative.parameters;
-			}
-			if (alternative && typeof(alternative.mask) != "undefined") {
-				mask = alternative.mask;
-			}
-		}
-		
+		// TODO: allow for async parents by having the routeParent return (optionally) a promise and wait on that to render the child
 		// if we are in need of a parent construct for this route, build it (or reuse it)
 		if (self.useParents) {
 			var parentAlias = chosenRoute.parent;
@@ -171,6 +159,21 @@ nabu.services.Router = function(parameters) {
 				else if (anchorEmpty && self.parents.length == 0) {
 					anchor = "body";
 				}
+			}
+		}
+		
+		// the chosen might set a spinner or some such
+		// if we go for an alternative with a different parent, that could pose a problem however!
+		if (self.chosen) {
+			var alternative = self.chosen(anchor, chosenRoute, parameters);
+			if (alternative && alternative.route) {
+				chosenRoute = alternative.route;
+			}
+			if (alternative && alternative.parameters) {
+				parameters = alternative.parameters;
+			}
+			if (alternative && typeof(alternative.mask) != "undefined") {
+				mask = alternative.mask;
 			}
 		}
 		
@@ -421,7 +424,7 @@ nabu.services.Router = function(parameters) {
 			current = self.findRoute(self.localizeUrl(window.location.pathname ? window.location.pathname : "/"));
 		}
 		if (self.useParents) {
-			return self.route(current.route.alias, current.parameters, anchor, mask, true);
+			return self.route(current ? current.route.alias : "unknown", current ? current.parameters : parameters, anchor, mask, true);
 		}
 		else {
 			var initial = self.getInitial(anchor, parameters, mask);
