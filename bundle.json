@@ -34,6 +34,9 @@
 			}, 
 			"dates.js": {
 				"url": "utils/dates.js"
+			}, 
+			"gtin.js": {
+				"url": "utils/gtin.js"
 			}
 		}, 
 		"net": {

@@ -63,7 +63,7 @@ nabu.services.Router = function(parameters) {
 			self.routeAll(alias, state ? state.parameters : null, anchor, false);
 		}
 		else {
-			self.route(alias, state ? state.parameters : null, anchor, true);
+			self.route(alias, state ? state.parameters : null, anchor, true, false, true);
 		}
 	}, false);
 	
@@ -82,7 +82,7 @@ nabu.services.Router = function(parameters) {
 	};
 
 	// route to a new alias
-	this.route = function(alias, parameters, anchor, mask, initial) {
+	this.route = function(alias, parameters, anchor, mask, initial, back) {
 		// we do it this way to preserve backwards compatibility
 		var anchorEmpty = !anchor;
 		if (!anchor) {
@@ -182,10 +182,11 @@ nabu.services.Router = function(parameters) {
 			self.enter(anchor, chosenRoute, parameters, enterReturn, mask);
 		}
 		// update the current URL if the state has a URL attached to it (don't update if initial, we use keep using that url)
-		if (chosenRoute.url && !mask && !initial) {
+		if (chosenRoute.url && !mask && !initial && !back) {
 			self.updateUrl(chosenRoute.alias, chosenRoute.url, parameters, chosenRoute.query, anchor);
 		}
-		else {
+		// the state is already correct if initial
+		else if (!initial && !back) {
 			self.updateState(chosenRoute.alias, parameters, chosenRoute.query, anchor);
 		}
 		self.initials.push(null);
