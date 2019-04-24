@@ -135,9 +135,86 @@ nabu.utils.elements = {
 		
 		if (!rules) {
 			rules = nabu.utils.elements.cssRules(media);
+			// we want to split the rules up, if you have a rule with a "," in the selector, make multiple rules out of it
+			// this prevents us from matching a rule to an element but not knowing which part actually made the match
+			// and thus not being able to deduce how specific the rule is
+			if (true) {
+				var splitRules = [];
+				rules.forEach(function(rule) {
+					rule.selectorText.split(/[\\s]*,[\\s]*/g).forEach(function(part) {
+						if (part.trim()) {
+							splitRules.push({
+								selectorText: part,
+								cssText: rule.cssText
+							});
+						}
+					});
+				});
+				rules = splitRules;
+			}
 		}
+
+		var maxLength = function(selector) {
+			var max = 0;
+			var parts = selector.split(/[\s]*,[\s]*/);
+			for (var i = 0; i < parts.length; i++) {
+				if (parts[i].length > max) {
+					max = parts[i].length;
+				}
+			}
+			return max;
+		}
+		var inlineAll = function() {
+			var elements = [];
+			var applied = [];
+			rules.forEach(function(rule) {
+				try {
+					var nodeList = document.body.querySelectorAll(rule.selectorText);
+					for (var i = 0; i < nodeList.length; i++) {
+						// basic check to see if we are dealing with a node
+						if (nodeList.item(i).nodeType == 1 && nodeList.item(i).hasAttribute && !nodeList.item(i).hasAttribute("original-style")) {
+							var index = elements.indexOf(nodeList.item(i));
+							if (index < 0) {
+								index = elements.length;
+								elements.push(nodeList.item(i));
+								applied.push([]);
+							}
+							applied[index].push({selectorText: rule.selectorText, cssText: rule.cssText});
+						}
+					}
+				}
+				catch (exception) {
+					console.info("Failed to run selector", rule.selectorText, exception);
+				}
+			});
+			elements.forEach(function(element, index) {
+				if (element.hasAttribute) {
+					// make sure rules are in proper order
+					applied[index].sort(function(a, b) {
+						return maxLength(a.selectorText) - maxLength(b.selectorText);
+					});
+					var result = "";
+					for (var i = 0; i < applied[index].length; i++) {
+						if (result != "") {
+							result += ";"
+						}
+						result += applied[index][i].cssText.replace(/.*\{[\s]*(.*)[\s]*\}.*/, "$1");
+					}
+					if (!element.hasAttribute("original-style")) {
+						element.setAttribute("original-style", element.getAttribute("style") ? element.getAttribute("style") : " ");
+					}
+					element.setAttribute("style", element.getAttribute("original-style") + ";" + result);
+				}
+				else {
+					console.log("skipping", typeof(element), element);
+				}
+			});
+		};
 		
-		if (elementAcceptor(element)) {
+		if (true) {
+			inlineAll();
+		}
+		else if (elementAcceptor(element)) {
 			var css = nabu.utils.elements.css(element, rules);
 			var result = "";
 			for (var i = 0; i < css.length; i++) {
@@ -152,10 +229,13 @@ nabu.utils.elements = {
 			element.setAttribute("style", element.getAttribute("original-style") + ";" + result);
 		}
 		
-		if (recursive) {
+		if (false && recursive) {
 			var child = nabu.utils.elements.first(element);
 			while (child) {
-				nabu.utils.elements.inlineCss(child, recursive, media, elementAcceptor, rules);
+				// skip children that are already done
+				if (!child.hasAttribute("original-style")) {
+					nabu.utils.elements.inlineCss(child, recursive, media, elementAcceptor, rules);
+				}
 				child = nabu.utils.elements.next(child);
 			}
 		}

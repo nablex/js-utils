@@ -36,6 +36,10 @@ nabu.services.SwaggerClient = function(parameters) {
 					else if (contentType && contentType.indexOf("text/html") >= 0) {
 						response = response.responseText;
 					}
+					else if (response.status == 204) {
+						response = null;
+					}
+					// TODO: are you ever interested in anything else but the response text?
 					promise.resolve(response);
 				}, function(error) {
 					var requireAuthentication = error.status == 401;
