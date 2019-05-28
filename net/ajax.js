@@ -227,7 +227,7 @@ nabu.utils.ajax = function(parameters) {
 		else if (parameters.data instanceof File) {
 			if (parameters.data.name) {
 				request.setRequestHeader("Content-Disposition", "attachment; filename=" + parameters.data.name);
-				if (!parameters.contentType) {
+				if (!parameters.contentType || parameters.contentType == "application/octet-stream") {
 					if (parameters.data.name.match(/.*\.png/i)) {
 						parameters.contentType = "image/png";
 					}

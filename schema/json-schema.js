@@ -306,7 +306,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "minLength",
-				title: "%{validation:The value '{actual}' must be at least {expected} long}",
+				title: "%{validation:The value must be at least {expected} long}",
 				priority: -2,
 				values: {
 					actual: result.length,
@@ -321,7 +321,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "maxLength",
-				title: "%{validation:The value '{actual}' can be at most {expected} long}",
+				title: "%{validation:The value can be at most {expected} long}",
 				priority: -2,
 				values: {
 					actual: result.length,

@@ -111,7 +111,7 @@ nabu.services.Router = function(parameters) {
 				return self.route(
 					result.alias,
 					result.parameters,
-					result.anchor ? result.anchor : anchor,
+					result.anchor ? result.anchor : (anchorEmpty ? null : anchor),
 					typeof(result.mask) == "undefined" ? mask : result.mask
 				);
 			}
