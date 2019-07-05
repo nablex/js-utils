@@ -52,8 +52,8 @@ nabu.utils.elements = {
 	},
 	sanitize: function(element) {
 		var allowedTags = ["a", "b", "i", "u", "em", "strong", "h1", "h2", "h3", "h4", "h5", "h6", "h7", "p", "table", "ul", 
-			"li", "tr", "td", "thead", "tbody", "th", "ol", "font", "br", "span", "div"];
-		var allowedAttributes = ["style", "href", "target", "rel"];
+			"li", "tr", "td", "thead", "tbody", "th", "ol", "font", "br", "span", "div", "pre", "blockquote", "code", "img"];
+		var allowedAttributes = ["style", "href", "target", "rel", "src", "alt", "title"];
 		return nabu.utils.elements.clean(element, allowedTags, null, allowedAttributes);
 	},
 	clean: function(element, allowedTags, tagsToRemove, allowedAttributes, attributesToRemove) {
@@ -74,6 +74,13 @@ nabu.utils.elements = {
 					}
 					else if (attributesToRemove && attributesToRemove.indexOf(attr.name) >= 0) {
 						child.removeAttribute(attr.name);
+					}
+					// for href we don't allow javascript: stuff
+					else if (attr.name.toLowerCase() == "href") {
+						console.log("attr value is", attr.value);
+						if (attr.value.indexOf("javascript:") >= 0) {
+							child.removeAttribute(attr.name);
+						}
 					}
 				}
 			}
