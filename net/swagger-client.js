@@ -39,6 +39,15 @@ nabu.services.SwaggerClient = function(parameters) {
 					else if (response.status == 204) {
 						response = null;
 					}
+					// we are never (?) interested in the original XMLHTTPRequest
+					else {
+						if (!response.responseText) {
+							response = null;
+						}
+						else {
+							response = response.responseText;
+						}
+					}
 					// TODO: are you ever interested in anything else but the response text?
 					promise.resolve(response);
 				}, function(error) {
