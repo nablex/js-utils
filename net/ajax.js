@@ -70,6 +70,11 @@ nabu.utils.ajax = function(parameters) {
 	if (!parameters.url) {
 		throw "Could not find url";
 	}
+	
+	// in mobile mode, we want to explicitly target the server
+	if (!parameters.host && ${environment("mobile") == true}) {
+		parameters.host = "${environment('url')}";
+	}
 
 	// if we have a host, prefix it to the url
 	if (parameters.host) {
