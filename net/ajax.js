@@ -35,7 +35,8 @@ parameters:
 	params: an associative array which acts as data in a post and url parameters in a get
 	contentType: the content type of the data,
 	binary: boolean to indicate whether content should be sent as binary blob (automatically set for image content types),
-	progress: a handler that is triggered periodically on progress of request
+	progress: a handler that is triggered periodically on progress of request,
+	cache: false: whether or not to cache the result
 */
 nabu.utils.ajax = function(parameters) {
 	var newXmlHttpRequest = function() {
@@ -70,7 +71,7 @@ nabu.utils.ajax = function(parameters) {
 	if (!parameters.url) {
 		throw "Could not find url";
 	}
-	
+
 	// in mobile mode, we want to explicitly target the server
 	if (!parameters.host && ${environment("mobile") == true}) {
 		parameters.host = "${environment('url')}";
@@ -185,6 +186,16 @@ nabu.utils.ajax = function(parameters) {
 			// response loaded
 			case 4:
 				if (request.status >= 200 && request.status < 300) {
+					// if we have an etag, cache it as well
+					if ((parameters.cache || request.getResponseHeader("ETag")) && request.responseText) {
+						var key = JSON.stringify(parameters);
+						localStorage.setItem(key, JSON.stringify({
+							status: request.status,
+							statusText: request.statusText,
+							responseText: request.responseText,
+							contentType: request.getResponseHeader("Content-Type")
+						}));
+					}
 					if (parameters.success) {
 						parameters.success(request);
 					}
@@ -197,9 +208,28 @@ nabu.utils.ajax = function(parameters) {
 					promise.succeed(request);
 				}
 				// this indicates that the http request was aborted
+				// seems to be the response in case of offline - tested in airplane mode on android
 				else if (request.status == 0) {
-					if (parameters.cancelled) {
+					var responded = false;
+					// always check cache
+					var key = JSON.stringify(parameters);
+					var response = localStorage.getItem(key);
+					if (response != null) {
+						responded = true;
+						var result = JSON.parse(response);
+						result.getResponseHeader = function(header) {
+							if (header.toLowerCase() == "content-type") {
+								return result.contentType;
+							}
+							return null;
+						};
+						promise.resolve(result);
+					}
+					if (parameters.cancelled && !responded) {
 						parameters.cancelled(request);
+					}
+					if (!responded) {
+						promise.fail(request);
 					}
 				}
 				else {
@@ -288,3 +318,4 @@ nabu.utils.binary = {
 		return new Blob(bytes, { type: contentType });
 	}
 };
+
