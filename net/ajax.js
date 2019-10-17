@@ -39,6 +39,7 @@ parameters:
 	cache: false: whether or not to cache the result
 */
 nabu.utils.ajax = function(parameters) {
+	var enableCaching = ${environment("mobile") == true};
 	var newXmlHttpRequest = function() {
 		if (window.XMLHttpRequest) {
 			// code for IE7+, Firefox, Chrome, Opera, Safari
@@ -187,7 +188,7 @@ nabu.utils.ajax = function(parameters) {
 			case 4:
 				if (request.status >= 200 && request.status < 300) {
 					// if we have an etag, cache it as well
-					if ((parameters.cache || request.getResponseHeader("ETag")) && request.responseText) {
+					if (enableCaching && (parameters.cache || request.getResponseHeader("ETag")) && request.responseText) {
 						var key = JSON.stringify(parameters);
 						localStorage.setItem(key, JSON.stringify({
 							status: request.status,
@@ -211,9 +212,12 @@ nabu.utils.ajax = function(parameters) {
 				// seems to be the response in case of offline - tested in airplane mode on android
 				else if (request.status == 0) {
 					var responded = false;
+					var response = null;
 					// always check cache
-					var key = JSON.stringify(parameters);
-					var response = localStorage.getItem(key);
+					if (enableCaching) {
+						var key = JSON.stringify(parameters);
+						response = localStorage.getItem(key);
+					}
 					if (response != null) {
 						responded = true;
 						var result = JSON.parse(response);
