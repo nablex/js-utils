@@ -347,11 +347,11 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 		}
 	}
 	var maximum = function(value, maximum, exclusiveMaximum) {
-		if (value != null && ( (exclusiveMaximum != null && value >= exclusiveMaximum) || (maximum != null && value > maximum) )) {
+		if (value != null && ( (exclusiveMaximum != null && exclusiveMaximum && value >= maximum) || (maximum != null && value > maximum) )) {
 			messages.push({
 				severity: "error",
 				code: "maximum",
-				title: "%{validation:The value {actual} is bigger than the allowed maximum of {expected}}",
+				title: exclusiveMaximum != null ? "%{validation:The value {actual} should be smaller than {expected}}" : "%{validation:The value {actual} should be smaller than or equal to {expected}}",                
 				priority: -2,
 				values: {
 					actual: value,
@@ -363,11 +363,11 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 		}
 	}
 	var minimum = function(value, minimum, exclusiveMinimum) {
-		if (value != null && ( (exclusiveMinimum != null && value <= exclusiveMinimum) || (minimum != null && value < minimum) )) {
+		if (value != null && ( (exclusiveMinimum != null && exclusiveMinimum && value <= minimum) || (minimum != null && value < minimum) )) {
 			messages.push({
 				severity: "error",
 				code: "minimum",
-				title: "%{validation:The value {actual} is smaller than the allowed minimum of {expected}}",
+				title: exclusiveMinimum != null ? "%{validation:The value {actual} should be bigger than {expected}}" : "%{validation:The value {actual} should be bigger than or equal to {expected}}",
 				priority: -2,
 				values: {
 					actual: value,
@@ -455,8 +455,8 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			}
 		}
 		if (result != null) {
-			maximum(value, definition.maximum, definition.exclusiveMaximum);
-			minimum(value, definition.minimum, definition.exclusiveMinimum);
+			maximum(result, definition.maximum, definition.exclusiveMaximum);
+			minimum(result, definition.minimum, definition.exclusiveMinimum);
 		}
 		else {
 			missing();
@@ -512,3 +512,4 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 	nabu.utils.schema.addAsyncValidation(messages);
 	return messages;
 };
+
