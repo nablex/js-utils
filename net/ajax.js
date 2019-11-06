@@ -37,6 +37,8 @@ parameters:
 	binary: boolean to indicate whether content should be sent as binary blob (automatically set for image content types),
 	progress: a handler that is triggered periodically on progress of request,
 	cache: false: whether or not to cache the result
+	language: the language you want to set
+	bearer: the bearer token you want to set (if any)
 */
 nabu.utils.ajax = function(parameters) {
 	var enableCaching = ${environment("mobile") == true};
@@ -300,7 +302,15 @@ nabu.utils.ajax = function(parameters) {
 	else {
 		parameters.data = null;
 	}
-
+	
+	if (parameters.language) {
+		request.setRequestHeader("Accept-Language", parameters.language);
+	}
+	
+	if (parameters.bearer) {
+		request.setRequestHeader("Authorization", "Bearer " + parameters.bearer);
+	}
+	
 	request.send(parameters.data ? parameters.data : null);
 	return promise;
 }

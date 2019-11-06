@@ -50,6 +50,7 @@ nabu.services.Router = function(parameters) {
 	this.initials = [];
 	
 	this.parents = [];
+	this.urlRewriter = parameters.urlRewriter;
 	
 	window.addEventListener("popstate", function(event) {
 		var state = event.state;
@@ -266,6 +267,9 @@ nabu.services.Router = function(parameters) {
 				}
 			}
 		}
+		if (this.urlRewriter && this.urlRewriter.outgoing) {
+			url = this.urlRewriter.outgoing(url);
+		}
 		return self.useHash && url.substring(0, 1) != "#" ? "#" + url : "${server.root()}" + url.replace(/^[/]+/, "");
 	};
 	
@@ -327,6 +331,9 @@ nabu.services.Router = function(parameters) {
 	this.findRoute = function(path, initial) {
 		if (!path) {
 			path = "/";
+		}
+		if (this.urlRewriter && this.urlRewriter.incoming) {
+			path = this.urlRewriter.incoming(path);
 		}
 		var chosenRoute = null;
 		var parameters = {};

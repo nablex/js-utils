@@ -17,10 +17,15 @@ nabu.services.SwaggerClient = function(parameters) {
 	this.rememberHandler = parameters.remember;
 	this.remembering = false;
 	this.definitionProcessors = [];
+	this.language = "${language()}";
+	this.bearer = parameters.bearer;
 	
 	if (!this.executor) {
 		if (nabu.utils && nabu.utils.ajax) {
 			this.executor = function(parameters) {
+				if (self.language) {
+					parameters.language = self.language;
+				}
 				var promise = new nabu.utils.promise();
 				if (parameters.map) {
 					promise.map(parameters.map);
@@ -127,7 +132,8 @@ nabu.services.SwaggerClient = function(parameters) {
 						method: method,
 						responses: operation.responses,
 						consumes: operation.consumes,
-						produces: operation.produces
+						produces: operation.produces,
+						security: operation.security
 					}
 				});
 			});
@@ -269,6 +275,9 @@ nabu.services.SwaggerClient = function(parameters) {
 			path: pathParameters,
 			query: query
 		};
+		if (operation.security && self.bearer) {
+			result.bearer = self.bearer;
+		}
 		// if the operation only accepts octet-stream, let's do that
 		if (operation.consumes && operation.consumes.length == 1 && operation.consumes[0] == "application/octet-stream") {
 			result.contentType = "application/octet-stream";
@@ -383,3 +392,4 @@ nabu.services.SwaggerBatchClient = function(parameters) {
 		throw "Unknown operation: " + name;	
 	};
 };
+
