@@ -342,6 +342,11 @@ nabu.services.Router = function(parameters) {
 		if (queryIndex >= 0) {
 			path = path.substring(0, queryIndex);
 		}
+		// we strip trailing slashes
+		path = path.replace(/[/]+$/, "");
+		if (path == "") {
+			path = "/";
+		}
 		var routes = this.sort();
 		for (var i = 0; i < routes.length; i++) {
 			if (routes[i].url && ((!initial && !routes[i].initial) || (initial && routes[i].initial))) {
