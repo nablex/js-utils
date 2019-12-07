@@ -32,6 +32,9 @@ nabu.utils.objects = {
 				return nabu.utils.objects.clone(single);
 			});
 		}
+		else if (typeof(original) != "object" || original == null) {
+			return original;
+		}
 		else {
 			var copy = {};
 			nabu.utils.objects.merge(copy, original);

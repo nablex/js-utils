@@ -56,15 +56,19 @@ nabu.services.Router = function(parameters) {
 		var state = event.state;
 		var alias = state ? state.alias : null;
 		var anchor = state ? state.anchor : null;
-		var initial = self.initials.pop();
-		if (!alias) {
-			self.routeInitial(anchor, state ? state.parameters : null, true);
-		}
-		else if (initial && !self.useParents) {
-			self.routeAll(alias, state ? state.parameters : null, anchor, false);
-		}
-		else {
-			self.route(alias, state ? state.parameters : null, anchor, true, false, true);
+		// we want to prevent accidental hash changes from triggering a reroute
+		// for a client integration they had <a> elements that updated the hashtag but this always triggered a popstate
+		if (alias || !self.initials.length) {
+			var initial = self.initials.pop();
+			if (!alias) {
+				self.routeInitial(anchor, state ? state.parameters : null, true);
+			}
+			else if (initial && !self.useParents) {
+				self.routeAll(alias, state ? state.parameters : null, anchor, false);
+			}
+			else {
+				self.route(alias, state ? state.parameters : null, anchor, true, false, true);
+			}
 		}
 	}, false);
 	
