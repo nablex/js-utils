@@ -56,8 +56,24 @@ nabu.utils.schema.addAsyncValidation = function(validations, promise, mapper) {
 	if (validations.then == null) {
 		validations.then = function(successHandler, errorHandler, progressHandler) {
 			new nabu.utils.promises(validations.promises).then(function() {
-				successHandler(validations);
-			}, errorHandler, progressHandler);
+				if (successHandler instanceof Function) {
+					successHandler(validations);
+				}
+				else if (successHandler.resolve) {
+					successHandler.resolve(validations);
+				}
+			}, function(error) {
+				validations.push({
+					code: "internal",
+					title: "%{An internal error has occurred}"
+				});
+				if (successHandler instanceof Function) {
+					successHandler(validations);
+				}
+				else {
+					successHandler.resolve(validations);
+				}
+			}, progressHandler);
 		}
 	}
 	return validations;
