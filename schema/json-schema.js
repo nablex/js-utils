@@ -114,7 +114,7 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 	}
 	else if (definition.type == "number" || definition.type == "integer") {
 		if (typeof(value) === "number") {
-			return value;
+			return definition.type == "integer" ? parseInt(value) : value;
 		}
 		// undefined, empty string,... just return null
 		else if (!value) {
@@ -124,6 +124,9 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 			var number = new Number(value);
 			if (isNaN(number)) {
 				throw "Not a number: " + value;
+			}
+			if (definition.type == "integer") {
+				number = parseInt(number);
 			}
 			return number;
 		}
