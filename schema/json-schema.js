@@ -50,8 +50,14 @@ nabu.utils.schema.addAsyncValidation = function(validations, promise, mapper) {
 				nabu.utils.arrays.merge(validations, result);
 			}
 		});
-		// we add the promise so we can wait on it after
-		validations.promises.push(promise);
+		// we want to support other "enhanced" arrays better
+		if (promise.promises instanceof Array) {
+			nabu.utils.arrays.merge(validations.promises, promise.promises);	
+		}
+		else {
+			// we add the promise so we can wait on it after
+			validations.promises.push(promise);
+		}
 	}
 	if (validations.then == null) {
 		validations.then = function(successHandler, errorHandler, progressHandler) {
