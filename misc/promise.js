@@ -10,7 +10,14 @@ if (!nabu.services) { nabu.services = {}; }
 nabu.utils.when = function(promises) {
 	return new nabu.utils.promises(promises);
 };
-
+nabu.utils.wait = function(promise, timeout, handler) {
+	var self = this;
+	this.timer = setTimeout(handler, timeout);
+	this.cancel = function() {
+		clearTimeout(self.timer);
+	};
+	promise.then(this.cancel);
+};
 nabu.utils.promise = function(parameters) {
 	var self = this;
 	this.state = null;
@@ -142,7 +149,7 @@ nabu.utils.promise = function(parameters) {
 		else if (mapper instanceof Function) {
 			self.mapper.push(mapper);
 		}
-	}
+	};
 };
 nabu.utils.promises = function(promises) {
 	var self = this;
@@ -292,5 +299,8 @@ nabu.services.Q = function Q() {
 		var promise = this.defer();
 		promise.reject(result);
 		return promise;
+	};
+	this.wait = function(promise, timeout, handler) {
+		return new nabu.utils.wait(promise, timeout, handler);
 	};
 }
