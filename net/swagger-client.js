@@ -275,7 +275,9 @@ nabu.services.SwaggerClient = function(parameters) {
 			path: pathParameters,
 			query: query
 		};
-		if (operation.security && self.bearer) {
+		// if if no security is explicitly required, it can be interesting to pass it along
+		// the service might want to differentiate internally
+		if (self.bearer) { // operation.security
 			result.bearer = self.bearer;
 		}
 		// if the operation only accepts octet-stream, let's do that
