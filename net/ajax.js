@@ -258,11 +258,59 @@ nabu.utils.ajax = function(parameters) {
 		request.setRequestHeader("Accept", "application/json");		//, text/html
 	}
 
+	// encoding file/blob to base64 is async, need a promise to contain it
+	var encodingPromises = [];
+	var encodingPromise = null;
+	
 	// need to add these headers for post
 	if (parameters.method.toUpperCase() == "POST" || parameters.method.toUpperCase() == "PUT" || parameters.method.toUpperCase() == "DELETE" || parameters.method.toUpperCase() == "PATCH") {
 		// if we are sending an object as data, jsonify it
 		if (parameters.data && typeof(parameters.data) == "object" && !(parameters.data instanceof File) && !(parameters.data instanceof Blob)) {
-			parameters.data = JSON.stringify(parameters.data);
+			var isObject = function(object) {
+				return typeof(object) == "object" && !(object instanceof File) && !(object instanceof Blob) 
+					&& !(object instanceof Date) && !(object instanceof Array);
+			}
+			var baseEncode = function(object) {
+				var keys = Object.keys(object);
+				keys.filter(function(key) { return object[key] instanceof Blob || object[key] instanceof File }).map(function(key) {
+					var reader = new FileReader();
+					reader.readAsDataURL(object[key]);
+					var promise = new nabu.utils.promise();
+					encodingPromises.push(promise);
+					reader.onload = function() {
+						var result = reader.result;
+						var index = result.indexOf(",");
+						console.log("result is", result, index, object[key]);
+						object[key] = result.substring(index + 1);
+						promise.resolve();
+					};
+				});
+				// encode recursively
+				keys.forEach(function(key) {
+					if (object[key] instanceof Array && object[key].length) {
+						object[key].forEach(function(instance) {
+							if (isObject(instance)) {
+								baseEncode(instance);
+							}
+						})
+					}
+					else if (isObject(object[key])) {
+						baseEncode(object[key]);
+					}
+				});
+			}
+			baseEncode(parameters.data);
+			if (encodingPromises.length) {
+				encodingPromise = new nabu.utils.promises(encodingPromises);
+			}
+			if (encodingPromise != null) {
+				encodingPromise.then(function() {
+					parameters.data = JSON.stringify(parameters.data);		
+				});
+			}
+			else {
+				parameters.data = JSON.stringify(parameters.data);
+			}
 			parameters.contentType = "application/json";
 		}
 		else if (parameters.data instanceof File) {
@@ -311,7 +359,14 @@ nabu.utils.ajax = function(parameters) {
 		request.setRequestHeader("Authorization", "Bearer " + parameters.bearer);
 	}
 	
-	request.send(parameters.data ? parameters.data : null);
+	if (encodingPromise != null) {
+		encodingPromise.then(function() {
+			request.send(parameters.data ? parameters.data : null);	
+		});
+	}
+	else {
+		request.send(parameters.data ? parameters.data : null);
+	}
 	return promise;
 }
 
@@ -332,4 +387,5 @@ nabu.utils.binary = {
 		return new Blob(bytes, { type: contentType });
 	}
 };
+
 

@@ -178,6 +178,7 @@ nabu.services.SwaggerClient = function(parameters) {
 		var headers = {};
 		var data = null;
 		var pathParameters = {};
+		
 		for (var i = 0; i < operation.parameters.length; i++) {
 			// we don't check header parameters as they may be injected by the browser and or ajax library
 			if (operation.parameters[i].required && operation.parameters[i].in != "header" && (!parameters || typeof(parameters[operation.parameters[i].name]) == "undefined" || parameters[operation.parameters[i].name] == null)) {
@@ -185,7 +186,7 @@ nabu.services.SwaggerClient = function(parameters) {
 			}
 			if (parameters && parameters.hasOwnProperty(operation.parameters[i].name)) {
 				var value = parameters[operation.parameters[i].name];
-				if (operation.parameters[i].schema && !(value instanceof File) && !(value instanceof Blob)) {
+				if (operation.parameters[i].schema) {
 					value = this.format(operation.parameters[i].schema, value);
 				}
 				// for query parameters etc, they might not have a schema
@@ -394,4 +395,5 @@ nabu.services.SwaggerBatchClient = function(parameters) {
 		throw "Unknown operation: " + name;	
 	};
 };
+
 

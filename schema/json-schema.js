@@ -97,7 +97,18 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 		}
 	}
 	if (definition.type == "string") {
-		if (definition.format == "date" && value instanceof Date) {
+		if (definition.format == "binary" || definition.format == "byte") {
+			if (value instanceof File || value instanceof Blob) {
+				return value;
+			}
+			else if (typeof(value) == "string" || value instanceof Date) {
+				return new Blob([value], {type : 'text/plain'});
+			}
+			else {
+				return new Blob([JSON.stringify(value, null, 2)], {type : 'application/json'});
+			}
+		}
+		else if (definition.format == "date" && value instanceof Date) {
 			// depending on how you constructed the date, the time part may be local time or not
 			// e.g. new Date("2018-01-01") is interpreted as 0 UTC (so 1 CET) and getting the date component is UTC is the same day
 			// if you do new Date(2018, 1, 1), it is interpreted as 0 local time (so -1 vs UTC) and transforming to UTC gets you the previous day
@@ -537,4 +548,5 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 	nabu.utils.schema.addAsyncValidation(messages);
 	return messages;
 };
+
 
