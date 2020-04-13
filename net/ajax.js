@@ -280,7 +280,6 @@ nabu.utils.ajax = function(parameters) {
 					reader.onload = function() {
 						var result = reader.result;
 						var index = result.indexOf(",");
-						console.log("result is", result, index, object[key]);
 						object[key] = result.substring(index + 1);
 						promise.resolve();
 					};
