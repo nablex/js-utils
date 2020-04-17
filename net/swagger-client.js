@@ -19,6 +19,7 @@ nabu.services.SwaggerClient = function(parameters) {
 	this.definitionProcessors = [];
 	this.language = "${language()}";
 	this.bearer = parameters.bearer;
+	this.toggledFeatures = [];
 	
 	if (!this.executor) {
 		if (nabu.utils && nabu.utils.ajax) {
@@ -284,6 +285,15 @@ nabu.services.SwaggerClient = function(parameters) {
 		// if the operation only accepts octet-stream, let's do that
 		if (operation.consumes && operation.consumes.length == 1 && operation.consumes[0] == "application/octet-stream") {
 			result.contentType = "application/octet-stream";
+		}
+		if (self.toggledFeatures.length) {
+			result.headers.Feature = "";
+			self.toggledFeatures.forEach(function(x) {
+				if (result.headers.Feature != "") {
+					result.headers.Feature += ";";
+				}
+				result.headers.Feature += x.name + "=" + (x.enabled == true);
+			});
 		}
 		return result;
 	};
