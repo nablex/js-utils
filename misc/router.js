@@ -375,18 +375,26 @@ nabu.services.Router = function(parameters) {
 						if (chosenRoute.query) {
 							var parts = queryParameters.substring(1).split("&");
 							for (var j = 0; j < parts.length; j++) {
+								var index = parts[j].indexOf("=");
+								var key = null, value = null;
+								if (index >= 0) {
+									key = decodeURIComponent(parts[j].substring(0, index));
+									value = decodeURIComponent(parts[j].substring(index + 1));
+								}
+								else {
+									key = decodeURIComponent(parts[j]);
+									value = null;
+								}
 								var values = parts[j].split("=");
-								if (chosenRoute.query.indexOf(values[0]) >= 0) {
-									var key = values[0];
-									values.splice(0, 1);
+								if (chosenRoute.query.indexOf(key) >= 0) {
 									if (parameters[key] != null) {
 										if (!(parameters[key] instanceof Array)) {
 											parameters[key] = [parameters[key]];
 										}
-										parameters[key].push(values.join("="));
+										parameters[key].push(value);
 									}
 									else {
-										parameters[key] = values.join("=");
+										parameters[key] = value;
 									}
 								}
 							}

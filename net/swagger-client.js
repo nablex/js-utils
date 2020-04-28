@@ -134,7 +134,9 @@ nabu.services.SwaggerClient = function(parameters) {
 						responses: operation.responses,
 						consumes: operation.consumes,
 						produces: operation.produces,
-						security: operation.security
+						security: operation.security,
+						tags: operation.tags,
+						summary: operation.summary
 					}
 				});
 			});
