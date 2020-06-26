@@ -20,6 +20,7 @@ nabu.services.SwaggerClient = function(parameters) {
 	this.language = "${language()}";
 	this.bearer = parameters.bearer;
 	this.toggledFeatures = [];
+	this.geoPosition = null;
 	
 	if (!this.executor) {
 		if (nabu.utils && nabu.utils.ajax) {
@@ -283,6 +284,9 @@ nabu.services.SwaggerClient = function(parameters) {
 		// the service might want to differentiate internally
 		if (self.bearer) { // operation.security
 			result.bearer = self.bearer;
+		}
+		if (self.geoPosition) {
+			result.header["Geo-Position"] = self.geoPosition.latitude + ";" + self.geoPosition.longitude;
 		}
 		// if the operation only accepts octet-stream, let's do that
 		if (operation.consumes && operation.consumes.length == 1 && operation.consumes[0] == "application/octet-stream") {
