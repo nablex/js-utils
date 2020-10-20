@@ -25,5 +25,16 @@ nabu.utils.dates = {
 		months.push("%{date:November}");
 		months.push("%{date:December}");
 		return months;
+	},
+	days: function() {
+		var days = [];
+		days.push("%{date:Monday}");
+		days.push("%{date:Tuesday}");
+		days.push("%{date:Wednesday}");
+		days.push("%{date:Thursday}");
+		days.push("%{date:Friday}");
+		days.push("%{date:Saturday}");
+		days.push("%{date:Sunday}");
+		return days;
 	}
 };
