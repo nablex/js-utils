@@ -2,14 +2,15 @@ if (!nabu) { var nabu = {} };
 if (!nabu.services) { nabu.services = {} };
 
 nabu.services.Cookies = function Cookies($services) {
-	this.set = function(name, value, days) {
+	this.set = function(name, value, days, domain) {
 		var expires = "";
 		if (days) {
 			var date = new Date();
 			date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
 			expires = "; expires=" + date.toUTCString();
 		}
-		document.cookie = name + "=" + value + expires + "; path=${when(environment('cookiePath') == null, environment('serverPath'), environment('cookiePath'))}";
+		document.cookie = name + "=" + value + expires + "; path=${when(environment('cookiePath') == null, environment('serverPath'), environment('cookiePath'))}"
+			+ (domain ? ";domain=" + domain : "");
 	};
 	this.get = function(name, defaultValue) {
 		name += "=";
