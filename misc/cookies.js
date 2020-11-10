@@ -26,7 +26,7 @@ nabu.services.Cookies = function Cookies($services) {
 		}
 		return defaultValue ? defaultValue : null;
 	};
-	this.unset = function(name) {
-		this.set(name, "", -1);
+	this.unset = function(name, domain) {
+		this.set(name, "", -1, domain);
 	}
 }
