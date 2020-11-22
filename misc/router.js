@@ -96,7 +96,7 @@ nabu.services.Router = function(parameters) {
 		var chosenRoute = null;
 		var routes = self.sort();
 		for (var i = 0; i < routes.length; i++) {
-			if (routes[i].alias == alias && !routes[i].initial) {
+			if (routes[i].alias == alias) {
 				chosenRoute = routes[i];
 				break;
 			}
@@ -139,7 +139,8 @@ nabu.services.Router = function(parameters) {
 			// this to allow us to be consistent when the bookmarkable url is refreshed upon
 			if (!parentAlias && (initial || (!mask && chosenRoute.url))) {
 				var initialRoute = self.getInitial(anchor, parameters, mask);
-				if (initialRoute) {
+				// if we are opening that route, don't use it!
+				if (initialRoute && initialRoute.route.alias != alias) {
 					parentAlias = initialRoute.route.alias;
 				}
 				// if we don't have a parent, no hard feelings, but we assume that we need to mount in the body then
@@ -187,11 +188,11 @@ nabu.services.Router = function(parameters) {
 			self.enter(anchor, chosenRoute, parameters, enterReturn, mask);
 		}
 		// update the current URL if the state has a URL attached to it (don't update if initial, we use keep using that url)
-		if (chosenRoute.url && !mask && !initial && !back) {
+		if (chosenRoute.url && !mask && !initial && !back && !chosenRoute.initial) {
 			self.updateUrl(chosenRoute.alias, chosenRoute.url, parameters, chosenRoute.query, anchor);
 		}
 		// the state is already correct if initial
-		else if (!initial && !back) {
+		else if (!initial && !back && !chosenRoute.initial) {
 			self.updateState(chosenRoute.alias, parameters, chosenRoute.query, anchor);
 		}
 		self.initials.push(null);

@@ -21,6 +21,7 @@ nabu.services.SwaggerClient = function(parameters) {
 	this.bearer = parameters.bearer;
 	this.toggledFeatures = [];
 	this.geoPosition = null;
+	this.offlineHandler = parameters.offlineHandler;
 	
 	if (!this.executor) {
 		if (nabu.utils && nabu.utils.ajax) {
@@ -58,6 +59,10 @@ nabu.services.SwaggerClient = function(parameters) {
 					// TODO: are you ever interested in anything else but the response text?
 					promise.resolve(response);
 				}, function(error) {
+					// if we have an offline handler, call it
+					if ((error.status == 502 || error.status == 503) && self.offlineHandler) {
+						self.offlineHandler(error);
+					}
 					var requireAuthentication = error.status == 401;
 					if (self.parseError) {
 						var contentType = error.getResponseHeader("Content-Type");
