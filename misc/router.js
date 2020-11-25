@@ -8,7 +8,7 @@ A route can be registered using the register:
 
 router.register({
 	alias: "theAliasForTheRoute",
-	enter: function(anchor, parameters),
+	enter: function(anchor, parameters, mask),
 	url: "/path/to/{myVar}/{myOtherVar}
 });
 
@@ -130,6 +130,8 @@ nabu.services.Router = function(parameters) {
 			}
 		}
 		
+		var parentUrl = null;
+		var parentEnter = null;
 		// TODO: allow for async parents by having the routeParent return (optionally) a promise and wait on that to render the child
 		// if we are in need of a parent construct for this route, build it (or reuse it)
 		if (self.useParents) {
@@ -150,7 +152,10 @@ nabu.services.Router = function(parameters) {
 				}
 			}
 			if (parentAlias) {
-				var parentAnchor = this.routeParent(parentAlias, parameters);
+				var routeParent = this.routeParent(parentAlias, parameters);
+				var parentAnchor = routeParent.anchor;
+				parentUrl = routeParent.url;
+				parentEnter = routeParent.enter;
 				// if we didn't specify an anchor to route in, use the parent anchor
 				if (anchorEmpty) {
 					anchor = parentAnchor;
@@ -183,13 +188,13 @@ nabu.services.Router = function(parameters) {
 			}
 		}
 		
-		var enterReturn = chosenRoute.enter(anchor, parameters, mask);
+		var enterReturn = chosenRoute.enter(anchor, parameters, mask, parentEnter);
 		if (self.enter != null) {
 			self.enter(anchor, chosenRoute, parameters, enterReturn, mask);
 		}
 		// update the current URL if the state has a URL attached to it (don't update if initial, we use keep using that url)
 		if (chosenRoute.url && !mask && !initial && !back && !chosenRoute.initial) {
-			self.updateUrl(chosenRoute.alias, chosenRoute.url, parameters, chosenRoute.query, anchor);
+			self.updateUrl(chosenRoute.alias, parentUrl == null ? chosenRoute.url : parentUrl.replace(/[/]+$/, "") + "/" + chosenRoute.url.replace(/^[/]+/, ""), parameters, chosenRoute.query, anchor);
 		}
 		// the state is already correct if initial
 		else if (!initial && !back && !chosenRoute.initial) {
@@ -204,7 +209,7 @@ nabu.services.Router = function(parameters) {
 		if (!parentRoute) {
 			throw "Could not find parent route: " + alias;
 		}
-
+		
 		var alreadyRouted = false;		
 		// first check if we have the parent routed in the current stack
 		for (var i = this.parents.length - 1; i >= 0; i--) {
@@ -218,22 +223,68 @@ nabu.services.Router = function(parameters) {
 			}
 		}
 		
+		var parentEnter = null;
+		
+		
+		var calculateUrl = function() {
+			// check if we have a parent with its own rendered url, this will already incorporate the urls from its parent so should be fine
+			for (var i = self.parents.length - 1; i >= 0; i--) {
+				if (self.parents[i].renderedUrl) {
+					return self.parents[i].renderedUrl;
+				}
+			}
+			return null;
+		}
+		var url = calculateUrl();
+		
+		// if we have a parent route with a url, check that it still matches the current parent that is routed, otherwise we may have to remove it
+		// for example if you have a parent url with an id in it, if the id changes the parent has to be rerendered
+		if (parentRoute.url) {
+			var renderedUrl = this.localizeUrl(this.templateUrl(parentRoute.url, parameters, parentRoute.query));
+			// "unroute" so to speak
+			if (alreadyRouted && renderedUrl != parentRoute.url) {
+				this.parents.splice(this.parents.length - 1, 1);
+				alreadyRouted = false;
+				
+				// recalculate the url, we bumped a parent
+				url = calculateUrl();
+			}
+		}
+		
 		// this particular parent is not yet routed, check if it itself has a parent
 		if (!alreadyRouted) {
 			// if we have no parent, we are assumed to route in the body
-			var anchor = parentRoute.parent != null ? self.routeParent(parentRoute.parent, parameters) : "body";
+			var anchor = parentRoute.parent != null ? self.routeParent(parentRoute.parent, parameters).anchor : "body";
 			if (anchor == "body") {
 				// clear all the parents, we are starting over
 				self.parents.splice(0);
 			}
 			// always mask parent routes
-			parentRoute.enter(anchor, parameters, true);
+			parentEnter = parentRoute.enter(anchor, parameters, true);
 			// TODO: might need to differentiate if we want the same parent but with different parameters!
+			
+			// we have a url, do some cloning shizzle...?
+			if (parentRoute.url) {
+				parentRoute = nabu.utils.objects.clone(parentRoute);
+				// the template is always global, relocalize it for this purpose...
+				var renderedUrl = this.localizeUrl(this.templateUrl(parentRoute.url, parameters, parentRoute.query));
+				if (url != null) {
+					url = url.replace(/[/]+$/, "") + "/" + renderedUrl.replace(/^[/]+/, "");
+				}
+				else {
+					url = renderedUrl;
+				}
+				parentRoute.renderedUrl = url;
+			}
 			self.parents.push(parentRoute);
 		}
 		
 		// because we are routing new content, whatever parents were routed in the "default" tag of the current parent will be overwritten on route
-		return parentRoute.defaultAnchor ? parentRoute.defaultAnchor : self.defaultAnchor;
+		return {
+			anchor: parentRoute.defaultAnchor ? parentRoute.defaultAnchor : self.defaultAnchor,
+			url : url,
+			enter: parentEnter
+		}
 	};
 	
 	this.template = function(alias, parameters) {
@@ -357,13 +408,32 @@ nabu.services.Router = function(parameters) {
 			if (routes[i].url && ((!initial && !routes[i].initial) || (initial && routes[i].initial))) {
 				var urls = routes[i].url instanceof Array ? routes[i].url : [routes[i].url];
 				var found = false;
+				
+				var parentUrl = null;
+				// we resolve the parent url which should be prepended if available
+				if (this.useParents && routes[i].parent) {
+					var tmp = routes[i];
+					while (tmp && tmp.parent) {
+						tmp = routes.filter(function(x) {
+							return x.alias == tmp.parent;
+						})[0];
+						if (tmp && tmp.url) {
+							parentUrl = parentUrl == null ? tmp.url : tmp.url.replace(/[/]+$/, "") + "/" + parentUrl.replace(/^[/]+/, "");
+						}
+					}
+				}
+				
 				for (var k = 0; k < urls.length; k++) {
-					var template = "^" + urls[k].replace(/\{[\s]*[^}:]+[\s]*:[\s]*([^}]+)[\s]*\}/g, "($1)").replace(/\{[\s]*[^}]+[\s]*\}/g, "([^/]+)") + "$";
+					var urlToMatch = urls[k];
+					if (parentUrl != null) {
+						urlToMatch = parentUrl.replace(/[/]+$/, "") + "/" + urlToMatch.replace(/^[/]+/, "")
+					}
+					var template = "^" + urlToMatch.replace(/\{[\s]*[^}:]+[\s]*:[\s]*([^}]+)[\s]*\}/g, "($1)").replace(/\{[\s]*[^}]+[\s]*\}/g, "([^/]+)") + "$";
 					var matches = path.match(template);
 					if (matches) {
-						var variables = urls[k].match(template);
+						var variables = urlToMatch.match(template);
 						if (!variables) {
-							throw "Could not extract variables from: " + urls[k].url;
+							throw "Could not extract variables from: " + urlToMatch;
 						}
 						if (variables.length != matches.length) {
 							throw "The amount of variables does not equal the amount of values";
@@ -646,3 +716,4 @@ nabu.utils.router = {
 		return element;
 	}
 }
+
