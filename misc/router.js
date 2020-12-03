@@ -239,7 +239,7 @@ nabu.services.Router = function(parameters) {
 		
 		// if we have a parent route with a url, check that it still matches the current parent that is routed, otherwise we may have to remove it
 		// for example if you have a parent url with an id in it, if the id changes the parent has to be rerendered
-		if (parentRoute.url) {
+		if (parentRoute.url && !parentRoute.initial) {
 			var renderedUrl = this.localizeUrl(this.templateUrl(parentRoute.url, parameters, parentRoute.query));
 			// "unroute" so to speak
 			if (alreadyRouted && renderedUrl != parentRoute.url) {
@@ -264,7 +264,7 @@ nabu.services.Router = function(parameters) {
 			// TODO: might need to differentiate if we want the same parent but with different parameters!
 			
 			// we have a url, do some cloning shizzle...?
-			if (parentRoute.url) {
+			if (parentRoute.url && !parentRoute.initial) {
 				parentRoute = nabu.utils.objects.clone(parentRoute);
 				// the template is always global, relocalize it for this purpose...
 				var renderedUrl = this.localizeUrl(this.templateUrl(parentRoute.url, parameters, parentRoute.query));
