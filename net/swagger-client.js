@@ -22,6 +22,14 @@ nabu.services.SwaggerClient = function(parameters) {
 	this.toggledFeatures = [];
 	this.geoPosition = null;
 	this.offlineHandler = parameters.offlineHandler;
+	this.requestEnrichers = [];
+
+	// allow global registering of request enrichers
+	// it is hard to pick the _exact_ spot in the service startup sequence
+	// we want to allow you to pick in as early as possible
+	if (application.configuration.requestEnrichers) {
+		nabu.utils.arrays.merge(self.requestEnrichers, application.configuration.requestEnrichers);
+	}
 	
 	if (!this.executor) {
 		if (nabu.utils && nabu.utils.ajax) {
@@ -291,8 +299,11 @@ nabu.services.SwaggerClient = function(parameters) {
 			result.bearer = self.bearer;
 		}
 		if (self.geoPosition) {
-			result.header["Geo-Position"] = self.geoPosition.latitude + ";" + self.geoPosition.longitude;
+			result.headers["Geo-Position"] = self.geoPosition.latitude + ";" + self.geoPosition.longitude;
 		}
+		self.requestEnrichers.forEach(function(x) {
+			x(result);	
+		});
 		// if the operation only accepts octet-stream, let's do that
 		if (operation.consumes && operation.consumes.length == 1 && operation.consumes[0] == "application/octet-stream") {
 			result.contentType = "application/octet-stream";

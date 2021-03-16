@@ -367,6 +367,21 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			});
 		}
 	}
+	var exactLength = function(value, exactLength) {
+		if (exactLength != null && (result.length > exactLength || result.length < exactLength)) {
+			messages.push({
+				severity: "error",
+				code: "exactLength",
+				title: "%{validation:The value must be {expected} long}",
+				priority: -2,
+				values: {
+					actual: result.length,
+					expected: exactLength
+				},
+				context: []
+			});
+		}
+	}
 	var pattern = function(value, pattern, patternComment) {
 		if (pattern != null && !result.match(pattern)) {
 			messages.push({
@@ -471,8 +486,14 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 		}
 		else {
 			var result = typeof(value) === "string" ? value : new String(value);
-			minLength(result, definition.minLength);
-			maxLength(result, definition.maxLength);
+			// json schema does not support an exact length, but we do in the backend, it will be seen as an identical min and max length
+			if (definition.minLength == definition.maxLength) {
+				exactLength(result, definition.minLength);
+			}
+			else {
+				minLength(result, definition.minLength);
+				maxLength(result, definition.maxLength);
+			}
 			pattern(result, definition.pattern, definition.patternComment);
 		}
 	}
