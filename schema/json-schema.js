@@ -40,9 +40,10 @@ nabu.utils.schema.addAsyncValidation = function(validations, promise, mapper) {
 							}
 							return x;
 						});
-						result = result.filter(function(x) {
-							return x.severity == "error";
-						});
+						// @2021-04-28: we want to allow info messages to pass through to be able to show informational metadata
+						//result = result.filter(function(x) {
+						//	return x.severity == "error";
+						//});
 					}
 				});
 			}

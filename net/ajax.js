@@ -149,6 +149,9 @@ nabu.utils.ajax = function(parameters) {
 
 	var promise = new nabu.utils.promise(parameters);
 	
+	// the request.onprogress gets a single "event" parameter which has:
+	// event.loaded  the amount of data currently transfered
+	// event.total  the total amount of data to be transferred
 	if (parameters.progress) {
 		request.onprogress = progress;
 	}
