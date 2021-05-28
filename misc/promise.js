@@ -160,6 +160,10 @@ nabu.utils.promises = function(promises) {
 	this.progressHandlers = [];
 	this.state = null;
 	this.response = null;
+	// we want to keep track of the current progress of all the promises combined
+	// the promises will be running in parallel, so the progress updates will be mixed
+	// we don't want to jump from 10/100 to 20/50, then back to 24/100 etc
+	this.progressIndicators = {};
 	
 	this.resolver = function() {
 		if (self.state == null) {
@@ -204,6 +208,18 @@ nabu.utils.promises = function(promises) {
 	};
 	
 	this.onprogress = function(event, parameters) {
+		// if we have a target, we calculate the total
+		if (event.target) {
+			self.progressIndicators[event.target] = event;
+			var total = 0;
+			var loaded = 0;
+			Object.values(self.progressIndicators).forEach(function(x) {
+				total += x.total;
+				loaded += x.loaded;
+			});
+			event.loaded = loaded;
+			event.total = total;
+		}
 		if (self.progressHandlers) {
 			for (var i = 0; i < self.progressHandlers.length; i++) {
 				self.progressHandlers[i](event, parameters);

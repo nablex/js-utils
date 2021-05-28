@@ -58,7 +58,12 @@ nabu.utils.elements = {
 	},
 	clean: function(element, allowedTags, tagsToRemove, allowedAttributes, attributesToRemove) {
 		var returnAsString = false;
-		if (typeof(element) == "string") {
+		// previously we checked whether or not the incoming element is a string
+		// typeof(element) == "string"
+		// the assumption is (presumably) that the incoming element can be either a string or a html document element
+		// however, if you send in a number or a boolean or any other primitive type, it will bypass the string check and be treated like an element, which is not what we want
+		// because this (in the end), means we send back the full template _with_ the additional <div> wrapper element, which simply adds complexity to the html
+		if (!(element instanceof HTMLElement)) {
 			returnAsString = true;
 			var div = document.createElement("div");
 			div.innerHTML = element;

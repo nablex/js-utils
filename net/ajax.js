@@ -152,13 +152,26 @@ nabu.utils.ajax = function(parameters) {
 	// the request.onprogress gets a single "event" parameter which has:
 	// event.loaded  the amount of data currently transfered
 	// event.total  the total amount of data to be transferred
+	var progressFunction = null;
 	if (parameters.progress) {
-		request.onprogress = progress;
+		progressFunction = parameters.progress;
 	}
 	else {
-		request.onprogress = promise.onprogress;
+		progressFunction = promise.onprogress;
 	}
 	
+	// if we have a progress function, we need to register it either for the upload side or the download side
+	// when we do a GET, we assume the download can be big (e.g. downloading a file)
+	// otherwise, we assume the request to be big
+	if (progressFunction) {
+		if (parameters.method == null || parameters.method.toUpperCase() == "GET") {
+			request.onprogress = progressFunction;
+		}
+		else {
+			request.upload.onprogress = progressFunction;
+		}
+	}
+
 	// in the future we may not want to abort the request if there are multiple promise subscribers
 	// or if the promise has already been completed
 	// in that case we should only cancel the request if all subscribers want it cancelled

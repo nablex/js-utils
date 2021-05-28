@@ -41,6 +41,7 @@ nabu.services.SwaggerClient = function(parameters) {
 				if (parameters.map) {
 					promise.map(parameters.map);
 				}
+				parameters.progress = promise.onprogress;
 				nabu.utils.ajax(parameters).then(function(response) {
 					var contentType = response.getResponseHeader("Content-Type");
 					if (contentType && contentType.indexOf("application/json") >= 0) {
