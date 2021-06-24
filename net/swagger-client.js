@@ -85,6 +85,11 @@ nabu.services.SwaggerClient = function(parameters) {
 							function() {
 								self.remembering = false;
 								parameters.remember = true;
+								// if we finalized the remember, our bearer token may have been updated!
+								// make sure we use the correct one, the parameters might have none or an old one
+								if (self.bearer) {
+									parameters.bearer = self.bearer;
+								}
 								self.executor(parameters).then(
 									function(response) {
 										promise.resolve(response);
@@ -294,7 +299,7 @@ nabu.services.SwaggerClient = function(parameters) {
 			path: pathParameters,
 			query: query
 		};
-		// if if no security is explicitly required, it can be interesting to pass it along
+		// even if no security is explicitly required, it can be interesting to pass it along
 		// the service might want to differentiate internally
 		if (self.bearer) { // operation.security
 			result.bearer = self.bearer;
