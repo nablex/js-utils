@@ -260,6 +260,20 @@ nabu.utils.schema.json.normalize = function(definition, value, resolver, createN
 	else if (typeof(value) == "string" && definition.type == "boolean") {
 		value = value == "true";
 	}
+	// we receive base64
+	else if (value && typeof(value) == "string" && (definition.format == "binary" || definition.format == "byte")) {
+		var base64ToBlob = function(base, contentType) {
+			var raw = window.atob(base);
+			var rawLength = raw.length;
+			var uInt8Array = new Uint8Array(rawLength);
+			for (var i = 0; i < rawLength; ++i) {
+				uInt8Array[i] = raw.charCodeAt(i);
+			}
+			return new Blob([uInt8Array], {type: contentType});
+		};
+		// TODO: should get content type from somewhere?
+		value = base64ToBlob(value, "application/octet-stream");
+	}
 	return value;
 }
 
