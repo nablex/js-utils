@@ -215,7 +215,10 @@ nabu.utils.elements = {
 					if (!element.hasAttribute("original-style")) {
 						element.setAttribute("original-style", element.getAttribute("style") ? element.getAttribute("style") : " ");
 					}
-					element.setAttribute("style", element.getAttribute("original-style") + ";" + result);
+					if (element.getAttribute("original-style") && element.getAttribute("original-style").trim() != "") {
+						result = element.getAttribute("original-style") + ";" + result;
+					}
+					element.setAttribute("style", result);
 				}
 				else {
 					console.log("skipping", typeof(element), element);
@@ -238,7 +241,10 @@ nabu.utils.elements = {
 			if (!element.hasAttribute("original-style")) {
 				element.setAttribute("original-style", element.getAttribute("style") ? element.getAttribute("style") : " ");
 			}
-			element.setAttribute("style", element.getAttribute("original-style") + ";" + result);
+			if (element.getAttribute("original-style") && element.getAttribute("original-style").trim() != "") {
+				result = element.getAttribute("original-style") + ";" + result;
+			}
+			element.setAttribute("style", result);
 		}
 		
 		if (false && recursive) {
