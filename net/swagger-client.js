@@ -328,6 +328,9 @@ nabu.services.SwaggerClient = function(parameters) {
 	
 	this.execute = function(name, parameters, map, async) {
 		var operation = self.operations[name];
+		if (!operation) {
+			throw "Can not resolve operation: " + name;
+		}
 		if (operation.executor) {
 			return operation.executor(parameters, map);
 		}
