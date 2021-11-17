@@ -200,6 +200,11 @@ nabu.services.Router = function(parameters) {
 		else if (!initial && !back && !chosenRoute.initial) {
 			self.updateState(chosenRoute.alias, parameters, chosenRoute.query, anchor);
 		}
+		// you have to push the initial state, apparently you need to push state twice, otherwise you don't get event.state in the popstate option
+		// that would mean, if you go to a initial page, then one link deep and "back", it doesn't work...
+		else if (initial) {
+			self.updateState(chosenRoute.alias, parameters, chosenRoute.query, anchor);
+		}
 		self.initials.push(null);
 		return enterReturn;
 	};
