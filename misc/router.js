@@ -264,24 +264,32 @@ nabu.services.Router = function(parameters) {
 				// clear all the parents, we are starting over
 				self.parents.splice(0);
 			}
-			// always mask parent routes
-			parentEnter = parentRoute.enter(anchor, parameters, true);
-			// TODO: might need to differentiate if we want the same parent but with different parameters!
-			
-			// we have a url, do some cloning shizzle...?
-			if (parentRoute.url && !parentRoute.initial) {
-				parentRoute = nabu.utils.objects.clone(parentRoute);
-				// the template is always global, relocalize it for this purpose...
-				var renderedUrl = this.localizeUrl(this.templateUrl(parentRoute.url, parameters, parentRoute.query));
-				if (url != null) {
-					url = url.replace(/[/]+$/, "") + "/" + renderedUrl.replace(/^[/]+/, "");
+			try {
+				// always mask parent routes
+				parentEnter = parentRoute.enter(anchor, parameters, true);
+				// TODO: might need to differentiate if we want the same parent but with different parameters!
+				
+				// we have a url, do some cloning shizzle...?
+				if (parentRoute.url && !parentRoute.initial) {
+					parentRoute = nabu.utils.objects.clone(parentRoute);
+					// the template is always global, relocalize it for this purpose...
+					var renderedUrl = this.localizeUrl(this.templateUrl(parentRoute.url, parameters, parentRoute.query));
+					if (url != null) {
+						url = url.replace(/[/]+$/, "") + "/" + renderedUrl.replace(/^[/]+/, "");
+					}
+					else {
+						url = renderedUrl;
+					}
+					parentRoute.renderedUrl = url;
 				}
-				else {
-					url = renderedUrl;
-				}
-				parentRoute.renderedUrl = url;
+				self.parents.push(parentRoute);
 			}
-			self.parents.push(parentRoute);
+			catch (exception) {
+				if (anchor != "body" && !document.querySelector("#" + anchor)) {
+					console.log("The anchor '" + anchor + "' is unavailable for routing parent '" + parentRoute.alias + "', parents can currently not be nested in asynchronous grandparents, check if parent '" + parentRoute.parent + "' has an asynchronous action");
+				}
+				throw exception;
+			}
 		}
 		
 		// because we are routing new content, whatever parents were routed in the "default" tag of the current parent will be overwritten on route
