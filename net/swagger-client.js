@@ -16,6 +16,7 @@ nabu.services.SwaggerClient = function(parameters) {
 	this.parseError = parameters.parseError;
 	this.rememberHandler = parameters.remember;
 	this.remembering = false;
+	this.rememberPromise = null;
 	this.definitionProcessors = [];
 	this.language = "${language()}";
 	this.bearer = parameters.bearer;
@@ -79,29 +80,45 @@ nabu.services.SwaggerClient = function(parameters) {
 							error = JSON.parse(error.responseText);
 						}
 					}
-					if (requireAuthentication && !parameters.remember && self.rememberHandler && !self.remembering) {
-						self.remembering = true;
-						self.rememberHandler().then(
-							function() {
-								self.remembering = false;
-								parameters.remember = true;
-								// if we finalized the remember, our bearer token may have been updated!
-								// make sure we use the correct one, the parameters might have none or an old one
-								if (self.bearer) {
-									parameters.bearer = self.bearer;
-								}
-								self.executor(parameters).then(
-									function(response) {
-										promise.resolve(response);
-									},
-									function(error) {
-										promise.reject(error);
-									});
+					var rememberSuccess = function() {
+						parameters.remember = true;
+						// if we finalized the remember, our bearer token may have been updated!
+						// make sure we use the correct one, the parameters might have none or an old one
+						if (self.bearer) {
+							parameters.bearer = self.bearer;
+						}
+						self.executor(parameters).then(
+							function(response) {
+								promise.resolve(response);
 							},
-							function() {
-								self.remembering = false;
+							function(error) {
 								promise.reject(error);
 							});
+					};
+					var rememberFailure = function() {
+						promise.reject(error);
+					};
+					// if we are currently not remembering, start a cycle
+					if (requireAuthentication && !parameters.remember && self.rememberHandler && !self.remembering) {
+						self.remembering = true;
+						self.rememberPromise = new nabu.utils.promise();
+						self.rememberHandler().then(
+							function() {
+								self.rememberPromise.resolve();
+								self.remembering = false;
+								rememberSuccess();
+							},
+							function(error) {
+								self.rememberPromise.resolve();
+								self.remembering = false;
+								rememberFailure(error);
+							});
+					}
+					// if we are remembering, use the promise
+					else if (requireAuthentication && !parameters.remember && self.remembering) {
+						self.rememberPromise.then(
+							rememberSuccess,
+							rememberFailure);
 					}
 					else {
 						promise.reject(error);
@@ -118,11 +135,14 @@ nabu.services.SwaggerClient = function(parameters) {
 	this.remember = function() {
 		if (self.rememberHandler) {
 			self.remembering = true;
+			self.rememberPromise = new nabu.utils.promise();
 			return self.rememberHandler().then(
 				function() {
+					self.rememberPromise.resolve();
 					self.remembering = false;
 				},
 				function() {
+					self.rememberPromise.resolve();
 					self.remembering = false;
 				}
 			);
