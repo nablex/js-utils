@@ -214,6 +214,15 @@ nabu.services.Router = function(parameters) {
 		if (!parentRoute) {
 			throw "Could not find parent route: " + alias;
 		}
+
+		// parents can also make use of query parameters, however they will not be present in the "parameters" object unless the children have the same parameters
+		// so in this case, if the parent requires query parameters, we explicitly get them
+		// we don't merge them into the parameters object by reference but instead we merge the parameters into the query params
+		if (parentRoute.query) {
+			var queryParameters = self.getQueryParameters(parentRoute.query);
+			nabu.utils.objects.merge(queryParameters, parameters);
+			parameters = queryParameters;
+		}
 		
 		var alreadyRouted = false;		
 		// first check if we have the parent routed in the current stack
@@ -395,6 +404,57 @@ nabu.services.Router = function(parameters) {
 				- (typeof(a.priority) == "undefined" ? 0 : a.priority);
 		});
 		return cloned;
+	}
+
+	this.getPath = function() {
+		var path = null;
+		if (self.useHash) {
+			path = window.location.hash && window.location.hash.length > 1 ? window.location.hash.substring(1) : "/";
+		}
+		else {
+			path = self.localizeUrl(window.location.pathname ? window.location.pathname : "/");
+		}
+		if (!path) {
+			path = "/";
+		}
+		if (this.urlRewriter && this.urlRewriter.incoming) {
+			path = this.urlRewriter.incoming(path);
+		}
+		return path;
+	}
+	
+	// the query should be an array of string
+	this.getQueryParameters = function(query) {
+		var path = this.getPath();
+		var queryIndex = path.indexOf("?");
+		var queryParameters = queryIndex >= 0 ? path.substring(queryIndex) : window.location.search;
+		var parts = queryParameters.substring(1).split("&");
+		var parameters = {};
+		for (var j = 0; j < parts.length; j++) {
+			var index = parts[j].indexOf("=");
+			var key = null, value = null;
+			if (index >= 0) {
+				key = decodeURIComponent(parts[j].substring(0, index));
+				value = decodeURIComponent(parts[j].substring(index + 1));
+			}
+			else {
+				key = decodeURIComponent(parts[j]);
+				value = null;
+			}
+			var values = parts[j].split("=");
+			if (query.indexOf(key) >= 0) {
+				if (parameters[key] != null) {
+					if (!(parameters[key] instanceof Array)) {
+						parameters[key] = [parameters[key]];
+					}
+					parameters[key].push(value);
+				}
+				else {
+					parameters[key] = value;
+				}
+			}
+		}
+		return parameters;
 	}
 
 	this.findRoute = function(path, initial) {
