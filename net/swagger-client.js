@@ -44,6 +44,7 @@ nabu.services.SwaggerClient = function(parameters) {
 				}
 				parameters.progress = promise.onprogress;
 				nabu.utils.ajax(parameters).then(function(response) {
+					var raw = response;
 					var contentType = response.getResponseHeader("Content-Type");
 					if (contentType && contentType.indexOf("application/json") >= 0) {
 						response = JSON.parse(response.responseText);
@@ -65,6 +66,10 @@ nabu.services.SwaggerClient = function(parameters) {
 						else {
 							response = response.responseText;
 						}
+					}
+					// we want to allow you to manipulate the resulting data based on the raw response (e.g. to extract http headers)
+					if (parameters.$$rawMapper) {
+						response = parameters.$$rawMapper(response, raw);
 					}
 					// TODO: are you ever interested in anything else but the response text?
 					promise.resolve(response);
@@ -367,6 +372,9 @@ nabu.services.SwaggerClient = function(parameters) {
 			}
 			if (async != null) {
 				executorParameters.async = async;
+			}
+			if (parameters && parameters.$$rawMapper) {
+				executorParameters.$$rawMapper = parameters.$$rawMapper;
 			}
 			return self.executor(executorParameters);
 		}

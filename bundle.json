@@ -37,6 +37,9 @@
 			}, 
 			"gtin.js": {
 				"url": "utils/gtin.js"
+			}, 
+			"jwt.js": {
+				"url": "utils/jwt.js"
 			}
 		}, 
 		"net": {
