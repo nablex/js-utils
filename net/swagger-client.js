@@ -178,6 +178,12 @@ nabu.services.SwaggerClient = function(parameters) {
 						tags: operation.tags,
 						summary: operation.summary
 					}
+					// we want to add extensions as well cause this can expose additional features available
+					Object.keys(self.swagger.paths[path][method]).forEach(function(key) {
+						if (key.indexOf("x-") == 0) {
+							self.operations[operation.operationId][key] = self.swagger.paths[path][method][key];
+						}
+					});
 				});
 			});
 		}
