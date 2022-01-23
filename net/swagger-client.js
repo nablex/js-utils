@@ -104,7 +104,7 @@ nabu.services.SwaggerClient = function(parameters) {
 						promise.reject(error);
 					};
 					// if we are currently not remembering, start a cycle
-					if (requireAuthentication && !parameters.remember && self.rememberHandler && !self.remembering) {
+					if (requireAuthentication && !parameters.remember && self.rememberHandler && !self.remembering && !parameters.$$skipRemember) {
 						self.remembering = true;
 						self.rememberPromise = new nabu.utils.promise();
 						self.rememberHandler().then(
@@ -120,7 +120,7 @@ nabu.services.SwaggerClient = function(parameters) {
 							});
 					}
 					// if we are remembering, use the promise
-					else if (requireAuthentication && !parameters.remember && self.remembering) {
+					else if (requireAuthentication && !parameters.remember && self.remembering && !parameters.$$skipRemember) {
 						self.rememberPromise.then(
 							rememberSuccess,
 							rememberFailure);
@@ -375,6 +375,9 @@ nabu.services.SwaggerClient = function(parameters) {
 			}
 			if (parameters && parameters.$$rawMapper) {
 				executorParameters.$$rawMapper = parameters.$$rawMapper;
+			}
+			if (parameters && parameters.$$skipRemember) {
+				executorParameters.$$skipRemember = parameters.$$skipRemember;
 			}
 			return self.executor(executorParameters);
 		}

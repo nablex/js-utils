@@ -98,6 +98,60 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 		}
 	}
 	if (definition.type == "string") {
+		// if we have a string, let's check if you have duration format, in that case we generate a date
+		if ((definition.format == "date" || definition.format == "date-time") && typeof(value) == "string" && value.match(/[-]{0,1}P[YMDTHS0-9]+$/)) {
+			var originalDuration = value;
+			var factor = value.indexOf("-") == 0 ? -1 : 1;
+			// drop the leading -
+			if (factor < 0) {
+				value = value.substring(1);
+			}
+			// the total duration in ms
+			var duration = 0;
+			var result = new Date();
+			// not supported atm
+			result.setMilliseconds(0);
+			// skip P
+			value = value.substring(1);
+			// separate date part from time part
+			var parts = value.split("T");
+			// check for years
+			var index = parts[0].indexOf("Y");
+			if (index >= 0) {
+				result.setYear(result.getFullYear() + (factor * parseInt(parts[0].substring(0, index))));
+				parts[0] = parts[0].substring(index + 1);
+			}
+			index = parts[0].indexOf("M");
+			console.log("found month?", index, parts[0]);
+			if (index >= 0) {
+				result.setMonth(result.getMonth() + (factor * parseInt(parts[0].substring(0, index))));
+				parts[0] = parts[0].substring(index + 1);
+			}
+			index = parts[0].indexOf("D");
+			if (index >= 0) {
+				result.setDate(result.getDate() + (factor * parseInt(parts[0].substring(0, index))));
+				parts[0] = parts[0].substring(index + 1);
+			}
+			if (parts.length >= 2) {
+				index = parts[1].indexOf("H");
+				if (index >= 0) {
+					result.setHours(result.getHours() + (factor * parseInt(parts[1].substring(0, index))));
+					parts[1] = parts[1].substring(index + 1);
+				}
+				index = parts[1].indexOf("M");
+				if (index >= 0) {
+					result.setMinutes(result.getMinutes() + (factor * parseInt(parts[1].substring(0, index))));
+					parts[1] = parts[1].substring(index + 1);
+				}
+				index = parts[1].indexOf("S");
+				if (index >= 0) {
+					result.setSeconds(result.getSeconds() + (factor * parseInt(parts[1].substring(0, index))));
+					parts[1] = parts[1].substring(index + 1);
+				}
+			}
+			value = result;
+		}
+		
 		if (definition.format == "binary" || definition.format == "byte") {
 			if (value instanceof File || value instanceof Blob) {
 				return value;
