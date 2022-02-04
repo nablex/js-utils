@@ -100,6 +100,9 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 	if (definition.type == "string") {
 		// if we have a string, let's check if you have duration format, in that case we generate a date
 		if ((definition.format == "date" || definition.format == "date-time") && typeof(value) == "string" && value.match(/[-]{0,1}P[YMDTHS0-9]+$/)) {
+			value = nabu.utils.dates.addDuration(value);
+			/*
+			// TO BE DELETED
 			var originalDuration = value;
 			var factor = value.indexOf("-") == 0 ? -1 : 1;
 			// drop the leading -
@@ -122,7 +125,6 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 				parts[0] = parts[0].substring(index + 1);
 			}
 			index = parts[0].indexOf("M");
-			console.log("found month?", index, parts[0]);
 			if (index >= 0) {
 				result.setMonth(result.getMonth() + (factor * parseInt(parts[0].substring(0, index))));
 				parts[0] = parts[0].substring(index + 1);
@@ -150,6 +152,7 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 				}
 			}
 			value = result;
+			*/
 		}
 		
 		if (definition.format == "binary" || definition.format == "byte") {
