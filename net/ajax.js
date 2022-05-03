@@ -283,7 +283,7 @@ nabu.utils.ajax = function(parameters) {
 		// if we are sending an object as data, jsonify it
 		if (parameters.data && typeof(parameters.data) == "object" && !(parameters.data instanceof File) && !(parameters.data instanceof Blob)) {
 			var isObject = function(object) {
-				return typeof(object) == "object" && !(object instanceof File) && !(object instanceof Blob) 
+				return object != null && typeof(object) == "object" && !(object instanceof File) && !(object instanceof Blob) 
 					&& !(object instanceof Date) && !(object instanceof Array);
 			}
 			var baseEncode = function(object) {

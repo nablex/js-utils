@@ -47,7 +47,7 @@ nabu.utils.dates = {
 		}
 		// the total duration in ms
 		var duration = 0;
-		var result = date ? date : new Date();
+		var result = date ? new Date(date.getTime()) : new Date();
 		// not supported atm
 		result.setMilliseconds(0);
 		// skip P
