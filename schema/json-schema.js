@@ -288,7 +288,7 @@ nabu.utils.schema.json.normalize = function(definition, value, resolver, createN
 		// if the object is null, we can't normalize it (?) 
 		// we _could_ start a new instance and fill it with empty fields, but not sure if that is better at this point
 		if (definition.properties && value != null) {
-			for (key in definition.properties) {
+			for (var key in definition.properties) {
 				if (typeof(value[key]) == "undefined") {
 					if (recursivelyCreateNew) {
 						value[key] = nabu.utils.schema.json.instance(definition.properties[key], resolver);
