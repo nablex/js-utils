@@ -44,15 +44,18 @@
 		}, 
 		"net": {
 			"swagger-client.js": {
-				"url": "net/swagger-client.js"
+				"url": "net/swagger-client.js",
+				"template": true
 			}, 
 			"ajax.js": {
-				"url": "net/ajax.js"
+				"url": "net/ajax.js",
+				"template": true
 			}
 		}, 
 		"misc": {
 			"router.js": {
-				"url": "misc/router.js"
+				"url": "misc/router.js",
+				"template": true
 			}, 
 			"services.js": {
 				"url": "misc/services.js"
@@ -61,7 +64,8 @@
 				"url": "misc/promise.js"
 			}, 
 			"cookies.js": {
-				"url": "misc/cookies.js"
+				"url": "misc/cookies.js",
+				"template": true
 			}, 
 			"batchResolver.js": {
 				"url": "misc/batchResolver.js"
