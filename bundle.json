@@ -3,7 +3,8 @@
 	"resources": {
 		"schema": {
 			"json-schema.js": {
-				"url": "schema/json-schema.js"
+				"url": "schema/json-schema.js",
+				"template": true
 			}
 		}, 
 		"iterators": {
@@ -33,7 +34,8 @@
 				"url": "utils/dom.js"
 			}, 
 			"dates.js": {
-				"url": "utils/dates.js"
+				"url": "utils/dates.js",
+				"template": true
 			}, 
 			"gtin.js": {
 				"url": "utils/gtin.js"
