@@ -17,7 +17,6 @@ nabu.services.ServiceManager = function() {
 	// especially dependencies can toggle the "optional" boolean to indicate that they could use a particular service but are not required to have it
 	// if the actual service never loads, there is never a call with optional false, so we can resolve it later
 	this.$promise = function(fullName, optional) {
-		console.log("promise for", fullName, optional);
 		if (!self.$promises[fullName]) {
 			self.$promises[fullName] = new nabu.utils.promise();
 		}
