@@ -7,14 +7,29 @@ nabu.services.ServiceManager = function() {
 	this.$definitions = [];
 	this.$instances = [];
 	this.$promises = {};
+	this.$optionals = {};
 	
 	for (var i = 0; i < arguments.length; i++) {
 		this.$definitions.push(arguments[i]);
 	}
 	
-	this.$promise = function(fullName) {
+	// we use this service both to load the actual service itself as well as get a promise for a dependency
+	// especially dependencies can toggle the "optional" boolean to indicate that they could use a particular service but are not required to have it
+	// if the actual service never loads, there is never a call with optional false, so we can resolve it later
+	this.$promise = function(fullName, optional) {
+		console.log("promise for", fullName, optional);
 		if (!self.$promises[fullName]) {
 			self.$promises[fullName] = new nabu.utils.promise();
+		}
+		// if you are optionally waiting for this, we set it IF it has no value yet
+		// if it is already set to true (or worse: false), we leave it
+		if (optional) {
+			if (!self.$optionals.hasOwnProperty(fullName)) {
+				self.$optionals[fullName] = true;
+			}
+		}
+		else {
+			self.$optionals[fullName] = false;
 		}
 		return self.$promises[fullName];
 	}
@@ -25,6 +40,14 @@ nabu.services.ServiceManager = function() {
 			promise.resolve(self);
 		};
 		this.$register(this.$definitions).then(resolver, resolver);
+		// at this point, regardless of the setup, we should have an overall view of all the services that exist
+		// if any promises are still set to optional, they are likely never going to resolve, resolve them now
+		Object.keys(self.$optionals).forEach(function(key) {
+			if (self.$optionals[key] == true) {
+				console.log("resolving optional dependency to", key);
+				self.$promise(key).resolve();
+			}
+		})
 		return promise;
 	}
 	

@@ -72,7 +72,7 @@ nabu.utils.schema.addAsyncValidation = function(validations, promise, mapper) {
 			}, function(error) {
 				validations.push({
 					code: "internal",
-					title: "%{An internal error has occurred}"
+					title: "%{validation:An error has occurred during validation}"
 				});
 				if (successHandler instanceof Function) {
 					successHandler(validations);
