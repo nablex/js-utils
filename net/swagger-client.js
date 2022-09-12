@@ -18,7 +18,7 @@ nabu.services.SwaggerClient = function(parameters) {
 	this.remembering = false;
 	this.rememberPromise = null;
 	this.definitionProcessors = [];
-	this.language = ${when(language() == null, "null", '"' + language() + '"')};
+	this.language = application && application.configuration ? application.configuration.language : null;
 	this.bearer = parameters.bearer;
 	this.toggledFeatures = [];
 	this.geoPosition = null;

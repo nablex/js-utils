@@ -76,6 +76,7 @@ nabu.utils.ajax = function(parameters) {
 	}
 
 	// in mobile mode, we want to explicitly target the server
+	// this is one of the few references where we keep the server-replacement of variables because this is baked into the building process
 	if (!parameters.host && ${environment("mobile") == true}) {
 		parameters.host = "${environment('url')}";
 	}
