@@ -348,7 +348,7 @@ nabu.services.Router = function(parameters) {
 		if (this.urlRewriter && this.urlRewriter.outgoing) {
 			url = this.urlRewriter.outgoing(url);
 		}
-		return self.useHash && url.substring(0, 1) != "#" ? "#" + url : "${server.root()}" + url.replace(/^[/]+/, "");
+		return self.useHash && url.substring(0, 1) != "#" ? "#" + url : (application && application.configuration ? application.configuration.root : "/") + url.replace(/^[/]+/, "");
 	};
 	
 	this.getUrl = function() {
@@ -559,7 +559,7 @@ nabu.services.Router = function(parameters) {
 	};
 
 	this.localizeUrl = function(url) {
-		var root = "${server.root()}";
+		var root = (application && application.configuration ? application.configuration.root : "/");
 		if (url.length >= root.length && url.substring(0, root.length) == root) {
 			url = "/" + url.substring(root.length);
 		}
