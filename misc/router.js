@@ -559,7 +559,7 @@ nabu.services.Router = function(parameters) {
 	};
 
 	this.localizeUrl = function(url) {
-		var root = (application && application.configuration ? application.configuration.root : "/");
+		var root = (application && application.configuration && application.configuration.root ? application.configuration.root : "/");
 		if (url.length >= root.length && url.substring(0, root.length) == root) {
 			url = "/" + url.substring(root.length);
 		}
