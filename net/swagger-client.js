@@ -358,6 +358,9 @@ nabu.services.SwaggerClient = function(parameters) {
 		if (application && application.configuration && application.configuration.development) {
 			result.headers["X-Service-Id"] = name;
 		}
+		if (parameters && parameters["$serviceContext"]) {
+			result.headers["X-Service-Context"] = parameters["$serviceContext"];
+		}
 		return result;
 	};
 	
