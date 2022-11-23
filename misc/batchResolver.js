@@ -32,7 +32,7 @@ nabu.utils.misc.BatchResolver = function(resolver, cacher, generator, mapper, ti
 			var keys = toResolve.splice(0, toResolve.length);
 			resolver(keys).then(function(result) {
 				var array = null;
-				if (!(result instanceof Array)) {
+				if (result && !(result instanceof Array)) {
 					Object.keys(result).map(function(key) {
 						if (result[key] instanceof Array) {
 							array = result[key];

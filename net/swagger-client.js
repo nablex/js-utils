@@ -354,6 +354,10 @@ nabu.services.SwaggerClient = function(parameters) {
 				result.headers.Feature += x.name + "=" + (x.enabled == true);
 			});
 		}
+		// added solely for readability in development
+		if (application && application.configuration && application.configuration.development) {
+			result.headers["X-Service-Id"] = name;
+		}
 		return result;
 	};
 	
