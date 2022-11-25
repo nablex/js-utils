@@ -30,6 +30,9 @@
 			"arrays.js": {
 				"url": "utils/arrays.js"
 			}, 
+			"string.js": {
+				"url": "utils/string.js"
+			}, 
 			"dom.js": {
 				"url": "utils/dom.js"
 			}, 

@@ -326,7 +326,7 @@ nabu.services.Router = function(parameters) {
 	
 	this.templateUrl = function(url, parameters, query) {
 		for (var key in parameters) {
-			url = url.replace(new RegExp("{[\s]*" + key + "[\s]*:[^}]+}"), parameters[key]).replace(new RegExp("{[\s]*" + key + "[\s]*}"), parameters[key]);
+			url = url.replace(new RegExp("{[\s]*" + key.replace("$", "\\$") + "[\s]*:[^}]+}"), parameters[key]).replace(new RegExp("{[\s]*" + key.replace("$", "\\$") + "[\s]*}"), parameters[key]);
 		}
 		url = url.replace(/[\/]{2,}/, "/");
 		if (query && parameters) {
