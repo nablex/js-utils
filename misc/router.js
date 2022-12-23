@@ -256,7 +256,7 @@ nabu.services.Router = function(parameters) {
 		if (parentRoute.url && !parentRoute.initial) {
 			var renderedUrl = this.localizeUrl(this.templateUrl(parentRoute.url, parameters, parentRoute.query));
 			// "unroute" so to speak
-			if (alreadyRouted && renderedUrl != parentRoute.url) {
+			if (alreadyRouted && renderedUrl != url) {
 				this.parents.splice(this.parents.length - 1, 1);
 				alreadyRouted = false;
 				
