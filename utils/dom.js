@@ -82,6 +82,9 @@ nabu.utils.elements = {
 					}
 					// in the past we removed "javascript:" only from href attributes
 					// now we remove it from _all_ attributes, just to make sure. you can for example also inject it in src="" attributes for an img tag
+					// @2023-01-04 because we do >= 0, this may actually be slightly too broad
+					// but if we check for == 0, we _have_ to trim it first
+					// if this causes issues, we can change it later 
 					else if (attr.value.indexOf("javascript:") >= 0) {
 						child.removeAttribute(attr.name);
 					}
