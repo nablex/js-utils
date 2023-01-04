@@ -80,11 +80,10 @@ nabu.utils.elements = {
 					else if (attributesToRemove && attributesToRemove.indexOf(attr.name) >= 0) {
 						child.removeAttribute(attr.name);
 					}
-					// for href we don't allow javascript: stuff
-					else if (attr.name.toLowerCase() == "href") {
-						if (attr.value.indexOf("javascript:") >= 0) {
-							child.removeAttribute(attr.name);
-						}
+					// in the past we removed "javascript:" only from href attributes
+					// now we remove it from _all_ attributes, just to make sure. you can for example also inject it in src="" attributes for an img tag
+					else if (attr.value.indexOf("javascript:") >= 0) {
+						child.removeAttribute(attr.name);
 					}
 				}
 			}
