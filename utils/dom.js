@@ -82,7 +82,6 @@ nabu.utils.elements = {
 					}
 					// for href we don't allow javascript: stuff
 					else if (attr.name.toLowerCase() == "href") {
-						console.log("attr value is", attr.value);
 						if (attr.value.indexOf("javascript:") >= 0) {
 							child.removeAttribute(attr.name);
 						}
