@@ -222,7 +222,7 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 		}
 	}
 	else if (definition.type == "array") {
-		if (!value) {
+		if (value == null) {
 			return null;
 		}
 		else if (!(value instanceof Array)) {

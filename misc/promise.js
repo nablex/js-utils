@@ -217,8 +217,8 @@ nabu.utils.promises = function(promises) {
 				total += x.total;
 				loaded += x.loaded;
 			});
-			event.loaded = loaded;
-			event.total = total;
+			//event.loaded = loaded;
+			//event.total = total;
 		}
 		if (self.progressHandlers) {
 			for (var i = 0; i < self.progressHandlers.length; i++) {
