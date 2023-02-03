@@ -311,7 +311,25 @@ nabu.services.Router = function(parameters) {
 	
 	this.template = function(alias, parameters) {
 		var route = this.findByAlias(alias, parameters, null, false);
-		return route && route.url ? this.templateUrl(route.url, parameters, route.query) : null;
+		if (self.useParents) {
+			var url = null;
+			var routeToCheck = route;
+			while (routeToCheck) {
+				if (routeToCheck.url) {
+					url = routeToCheck.url + (url == null ? "" : "/" + url);
+				}
+				if (routeToCheck.parent) {
+					routeToCheck = self.get(routeToCheck.parent);
+				}
+				else {
+					break;
+				}
+			}
+			return url ? this.templateUrl(url, parameters, route.query) : null;
+		}
+		else {
+			return route && route.url ? this.templateUrl(route.url, parameters, route.query) : null;
+		}
 	};
 	
 	this.bookmark = function(alias, parameters, anchor) {
@@ -348,6 +366,8 @@ nabu.services.Router = function(parameters) {
 		if (this.urlRewriter && this.urlRewriter.outgoing) {
 			url = this.urlRewriter.outgoing(url);
 		}
+		// replace any straggling variables with the key word "default"
+		url = url.replace(/\{[^}]+}/, "default");
 		return self.useHash && url.substring(0, 1) != "#" ? "#" + url : (application && application.configuration ? application.configuration.root : "/") + url.replace(/^[/]+/, "");
 	};
 	
