@@ -176,6 +176,9 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 		else if (definition.format == "date-time" && value instanceof Date) {
 			return value.toISOString();
 		}
+		else if (definition.format == "time" && value instanceof Date) {
+			return value.toISOString().substring("yyyy-MM-ddT".length);
+		}
 		if (value === false) {
 			return "false";
 		}
@@ -315,6 +318,11 @@ nabu.utils.schema.json.normalize = function(definition, value, resolver, createN
 	}
 	else if (value && definition.type == "string" && (definition.format == "date" || definition.format == "date-time")) {
 		value = new Date(value);
+	}
+	else if (value && definition.type == "string" && definition.format == "time") {
+		var full = "1970-01-01T";
+		full += value;
+		value = new Date(full);
 	}
 	else if (typeof(value) == "string" && definition.type == "boolean") {
 		value = value == "true";
