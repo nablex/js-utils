@@ -87,7 +87,7 @@ nabu.services.Router = function(parameters) {
 	};
 
 	// route to a new alias
-	this.route = function(alias, parameters, anchor, mask, initial, back, ignoreParents) {
+	this.route = function(alias, parameters, anchor, mask, initial, back) {
 		// we do it this way to preserve backwards compatibility
 		var anchorEmpty = !anchor;
 		if (!anchor) {
@@ -385,7 +385,7 @@ nabu.services.Router = function(parameters) {
 			self.changingHash = true;
 			window.location.hash = url;
 		}*/
-		if (window.history) {
+		if (window.history && url != self.getUrl()) {
 			if (!parameters) {
 				parameters = {};
 			}

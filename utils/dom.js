@@ -50,13 +50,13 @@ nabu.utils.elements = {
 			&& rect.bottom <= (window.innerHeight || document.documentElement.clientHeight)
 			&& rect.right <= (window.innerWidth || document.documentElement.clientWidth);
 	},
-	sanitize: function(element) {
+	sanitize: function(element, allowDataAttributes) {
 		var allowedTags = ["a", "b", "i", "u", "em", "strong", "h1", "h2", "h3", "h4", "h5", "h6", "h7", "p", "table", "ul", 
 			"li", "tr", "td", "thead", "tbody", "th", "ol", "font", "br", "span", "div", "pre", "blockquote", "code", "img"];
 		var allowedAttributes = ["style", "href", "target", "rel", "src", "alt", "title"];
-		return nabu.utils.elements.clean(element, allowedTags, null, allowedAttributes);
+		return nabu.utils.elements.clean(element, allowedTags, null, allowedAttributes, null, allowDataAttributes);
 	},
-	clean: function(element, allowedTags, tagsToRemove, allowedAttributes, attributesToRemove) {
+	clean: function(element, allowedTags, tagsToRemove, allowedAttributes, attributesToRemove, allowDataAttributes) {
 		var returnAsString = false;
 		// previously we checked whether or not the incoming element is a string
 		// typeof(element) == "string"
@@ -75,17 +75,21 @@ nabu.utils.elements = {
 				for (var j = child.attributes.length - 1; j >= 0; j--) {
 					var attr = child.attributes.item(j);
 					if (allowedAttributes && allowedAttributes.indexOf(attr.name) < 0) {
-						child.removeAttribute(attr.name);
+						if (!allowDataAttributes || attr.name.indexOf("data-") < 0) {
+							child.removeAttribute(attr.name);
+							continue;
+						}
 					}
-					else if (attributesToRemove && attributesToRemove.indexOf(attr.name) >= 0) {
+					if (attributesToRemove && attributesToRemove.indexOf(attr.name) >= 0) {
 						child.removeAttribute(attr.name);
+						continue;
 					}
 					// in the past we removed "javascript:" only from href attributes
 					// now we remove it from _all_ attributes, just to make sure. you can for example also inject it in src="" attributes for img, iframe,...
 					// @2023-01-04 because we do >= 0, this may actually be slightly too broad
 					// but if we check for == 0, we _have_ to trim it first
 					// if this causes issues, we can change it later 
-					else if (attr.value.indexOf("javascript:") >= 0) {
+					if (attr.value.indexOf("javascript:") >= 0) {
 						child.removeAttribute(attr.name);
 					}
 					// self contained xss prevention
@@ -161,7 +165,24 @@ nabu.utils.elements = {
 			if (true) {
 				var splitRules = [];
 				rules.forEach(function(rule) {
-					rule.selectorText.split(/[\\s]*,[\\s]*/g).forEach(function(part) {
+					var depth = 0;
+					var start = 0;
+					var parts = [];
+					var value = rule.selectorText;
+					for (var j = 0; j < rule.selectorText.length; j++) {
+						if (value.charAt(j) == "(") {
+							depth++;
+						}
+						else if (value.charAt(j) == ")") {
+							depth--;
+						}
+						else if (value.charAt(j) == "," && depth == 0) {
+							parts.push(value.substring(start, j));
+							start = j + 1;
+						}
+					}
+					parts.push(value.substring(start, value.length));
+					parts.forEach(function(part) {
 						if (part.trim()) {
 							splitRules.push({
 								selectorText: part,
