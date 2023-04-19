@@ -329,7 +329,8 @@ nabu.utils.ajax = function(parameters) {
 			}
 			parameters.contentType = "application/json";
 		}
-		else if (parameters.data instanceof File) {
+		// @2023-04-19: if you have a file, you have metadata in some specific fields (name and type). sometimes you have a blob (e.g. resized image from a file) and you want to attach the same metadata
+		else if (parameters.data instanceof Blob) {
 			if (parameters.data.name) {
 				request.setRequestHeader("Content-Disposition", "attachment; filename=" + parameters.data.name);
 				if (!parameters.contentType || parameters.contentType == "application/octet-stream") {
@@ -348,17 +349,12 @@ nabu.utils.ajax = function(parameters) {
 				parameters.contentType = "application/octet-stream";
 			}
 		}
-		else if (parameters.data instanceof Blob) {
-			if (!parameters.contentType) {
-				parameters.contentType = "application/octet-stream";
-			}
-		}
 		if (!parameters.contentType && parameters.data) {
 			parameters.contentType = "application/x-www-form-urlencoded";
 		}
 		if (parameters.contentType) {
 			request.setRequestHeader("Content-Type", parameters.contentType);
-			if (parameters.binary || (parameters.contentType.substring(0, 6) == "image/" && !(parameters.data instanceof File))) {
+			if (parameters.binary || (parameters.contentType.substring(0, 6) == "image/" && !(parameters.data instanceof Blob))) {
 				parameters.data = nabu.utils.binary.blob(parameters.data, parameters.contentType);
 			}
 		}
