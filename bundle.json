@@ -20,6 +20,11 @@
 				"url": "polyfill/function.js"
 			}
 		}, 
+		"formatters": {
+			"markdown.js": {
+				"url": "formatters/markdown.js"
+			}
+		},
 		"utils": {
 			"objects.js": {
 				"url": "utils/objects.js"
