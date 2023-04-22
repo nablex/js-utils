@@ -49,10 +49,15 @@ nabu.formatters.markdown = {
 			multiLineRegex
 		);
 		content = comments.content;
+
+		var strings = nabu.formatters.markdown.encodeStrings(
+			content
+		);
+		content = strings.content;
+
 		// already do basic encoding before we generate html
 		content = nabu.formatters.markdown.formatTextAsHtml(content, true);
 				
-		
 		// keywords
 		if (keywords && keywords.length) {
 			content = content.replaceAll(new RegExp("\\b(" + keywords.join("|") + ")\\b", "g"), "<span class='is-code-keyword'>$1</span>");
@@ -62,6 +67,7 @@ nabu.formatters.markdown = {
 		content = content.replaceAll(/\b([\w.]+)\(/g, "<span class='is-code-method'>$1</span>(");
 		
 		content = nabu.formatters.markdown.decodeComments(content, comments);
+		content = nabu.formatters.markdown.decodeStrings(content, strings);
 		return content;
 	},
 	asHtml: function(blocks, parameters) {
@@ -258,6 +264,56 @@ nabu.formatters.markdown = {
 
 		return content;
 	},
+	encodeStrings: function(content) {
+		var index = 0;
+		var match = null;
+		var strings = [];
+		var startIndex = 0;
+		while (startIndex >= 0) {
+			// if we have match, find the end
+			if (match != null) {
+				console.log("matching", match);
+				index = content.indexOf(match, startIndex + 1);
+				if (index >= 0) {
+					var string = content.substring(startIndex, index + 1);
+					console.log("found string", string);
+					content = content.replace(string, "::encoded-string-" + strings.length + "::");
+					strings.push(string);
+					match = null;
+				}
+				else {
+					break;
+				}
+			}
+			// if we don't have a match anymore, find the next string
+			if (match == null) {
+				var singleIndex = content.indexOf("'");
+				var doubleIndex = content.indexOf("\"");
+				if ((singleIndex >= 0 && doubleIndex >= 0 && singleIndex < doubleIndex) || (singleIndex >= 0 && doubleIndex < 0)) {
+					match = "'";
+					startIndex = singleIndex;
+				}
+				else if ((singleIndex >= 0 && doubleIndex >= 0 && singleIndex > doubleIndex) || (singleIndex < 0 && doubleIndex >= 0)) {
+					match = "\"";
+					startIndex = doubleIndex;
+				}
+				else {
+					startIndex = -1;
+				}
+				console.log("found", match,singleIndex,doubleIndex, startIndex, content);
+			}
+		}
+		return {
+			strings: strings,
+			content: content
+		}
+	},
+	decodeStrings: function(content, strings) {
+		strings.strings.forEach(function(string, index) {
+			content = content.replace("::encoded-string-" + index + "::", "<span class='is-code-string'>" + nabu.formatters.markdown.formatTextAsHtml(string) + "</span>");
+		});
+		return content;
+	},
 	encodeComments: function(content, singleLineRegex, multiLineRegex) {
 		// we want to preprocess comments and strings, we don't want to accidently highlight stuff in there
 		// multiline comments
@@ -286,10 +342,10 @@ nabu.formatters.markdown = {
 	},
 	decodeComments: function(content, comments) {
 		comments.single.forEach(function(comment, index) {
-			content = content.replace("::encoded-single-comment-" + index + "::", "<span class='is-comment is-variant-single'>" + nabu.formatters.markdown.formatTextAsHtml(comment) + "</span>");
+			content = content.replace("::encoded-single-comment-" + index + "::", "<span class='is-code-comment is-variant-single'>" + nabu.formatters.markdown.formatTextAsHtml(comment) + "</span>");
 		});
 		comments.multi.forEach(function(comment, index) {
-			content = content.replace("::encoded-multi-comment-" + index + "::", "<span class='is-comment is-variant-multi'>" + nabu.formatters.markdown.formatTextAsHtml(comment) + "</span>");
+			content = content.replace("::encoded-multi-comment-" + index + "::", "<span class='is-code-comment is-variant-multi'>" + nabu.formatters.markdown.formatTextAsHtml(comment) + "</span>");
 		});
 		return content;
 	},
@@ -526,9 +582,8 @@ nabu.formatters.markdown = {
 					}
 				}
 
-				// CUSTOM
 				// line, can be used for page break or the like
-				else if (line.indexOf("--") == 0) {
+				else if (line == "---" || line == "___" || line == "***") {
 					pushBlock({
 						type: "hr"
 					})
