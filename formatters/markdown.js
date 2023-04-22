@@ -2,6 +2,68 @@ if (!nabu) { var nabu = {} };
 if (!nabu.formatters) { nabu.formatters = {} };
 
 nabu.formatters.markdown = {
+	// each provider should be able to generate html from a syntax
+	syntaxProviders: {
+		sql: function(content, parameters) {
+			return nabu.formatters.markdown.encodeCode(
+				content, 
+				/--.*$/m, 
+				null, 
+				nabu.formatters.markdown.keywords.sql,
+				parameters
+			)
+		},
+		glue: function(content, parameters) {
+			return nabu.formatters.markdown.encodeCode(
+				content, 
+				/#.*$/m, 
+				null, 
+				nabu.formatters.markdown.keywords.default,
+				parameters
+			)
+		},
+		python: "glue",
+		java: function(content, parameters) {
+			return nabu.formatters.markdown.encodeCode(
+				content, 
+				/\/\/.*$/m, 
+				/\/\*.*\*\//s, 
+				nabu.formatters.markdown.keywords.default,
+				parameters
+			)
+		},
+		javascript: "java",
+		text: function(content, parameters) {
+			return nabu.formatters.markdown.formatTextAsHtml(content, true);
+		}
+	},
+	keywords: {
+		sql: ["select", "update", "delete", "insert", "create", "drop", "from", "where", "order by", "group by", "limit", "offset", "table", "index"],
+		default: ["abstract", "continue", "for", "new", "switch", "assert", "default", "goto", "package", "synchronized", "boolean", "do", "if", "private", "this", "break", "double", "implements", "protected", "throw", "byte", "else", "import", "public", "throws", "case", "enum", "instanceof", "return", "transient", "catch",
+			"extends", "int", "short", "try", "char", "final", "interface", "static", "void", "class", "finally", "long", "strictfp", "volatile", "const", "float", "native", "super", "while"]
+	},
+	encodeCode: function(content, singleLineRegex, multiLineRegex, keywords, parameters) {
+		var comments = nabu.formatters.markdown.encodeComments(
+			content,
+			singleLineRegex, 
+			multiLineRegex
+		);
+		content = comments.content;
+		// already do basic encoding before we generate html
+		content = nabu.formatters.markdown.formatTextAsHtml(content, true);
+				
+		
+		// keywords
+		if (keywords && keywords.length) {
+			content = content.replaceAll(new RegExp("\\b(" + keywords.join("|") + ")\\b", "g"), "<span class='is-code-keyword'>$1</span>");
+		}
+
+		// methods
+		content = content.replaceAll(/\b([\w.]+)\(/g, "<span class='is-code-method'>$1</span>(");
+		
+		content = nabu.formatters.markdown.decodeComments(content, comments);
+		return content;
+	},
 	asHtml: function(blocks, parameters) {
 		var html = [];
 		// the current list stack (can be mixture of ul and ol)
@@ -28,8 +90,22 @@ nabu.formatters.markdown = {
 			if (["h1", "h2", "h3", "h4", "h5", "h6", "p"].indexOf(block.type) >= 0) {
 				formatted.push(
 					"<" + block.type + " class='is-" + block.type + " is-variant-article'>"
-					+ nabu.formatters.markdown.formatContentAsHtml(block.content)
+					+ nabu.formatters.markdown.formatContentAsHtml(block.content, parameters)
 					+ "</" + block.type + ">"
+				);
+			}
+			else if (block.type == "code") {
+				formatted.push(
+					"<code target='" + (block.syntax ? block.syntax : "text") + "'>"
+					+ nabu.formatters.markdown.formatCodeAsHtml(block.content, block.syntax, parameters)
+					+ "</code>"
+				);
+			}
+			else if (block.type == "quote") {
+				formatted.push(
+					"<blockquote>"
+					+ nabu.formatters.markdown.formatTextAsHtml(block.content, parameters)
+					+ "</blockquote>"
 				);
 			}
 			else if (block.type == "ul" || block.type == "ol") {
@@ -56,7 +132,7 @@ nabu.formatters.markdown = {
 				}
 				formatted.push(
 					"<li>"
-					+ nabu.formatters.markdown.formatContentAsHtml(block.content)
+					+ nabu.formatters.markdown.formatContentAsHtml(block.content, parameters)
 					+ "</li>"
 				);
 			}
@@ -75,7 +151,7 @@ nabu.formatters.markdown = {
 						header.columns.forEach(function(column) {
 							formatted.push(
 								"<th colspan='" + (column.colspan ? column.colspan : 1) + "'>"
-								+ nabu.formatters.markdown.formatContentAsHtml(column.content)
+								+ nabu.formatters.markdown.formatContentAsHtml(column.content, parameters)
 								+ "</th>"
 							);
 						});
@@ -90,7 +166,7 @@ nabu.formatters.markdown = {
 						row.columns.forEach(function(column) {
 							formatted.push(
 								"<td colspan='" + (column.colspan ? column.colspan : 1) + "'>"
-								+ nabu.formatters.markdown.formatContentAsHtml(column.content)
+								+ nabu.formatters.markdown.formatContentAsHtml(column.content, parameters)
 								+ "</td>"
 							);
 						});
@@ -101,7 +177,7 @@ nabu.formatters.markdown = {
 				formatted.push("</table>");
 			}
 			else if (block.type == "block") {
-				formatted.push("<div class='is-" + (block.direction ? block.direction : "row") + "'>");
+				formatted.push("<div class='is-" + (block.direction ? block.direction : "row") + " is-variant-article'>");
 				nabu.utils.arrays.merge(formatted, nabu.formatters.markdown.asHtml(block.blocks, parameters));
 				formatted.push("</div>");
 			}
@@ -124,13 +200,104 @@ nabu.formatters.markdown = {
 		}
 		return html.join("\n");
 	},
-	// interprets inline things as html
-	formatContentAsHtml: function(content) {
-		// line feeds
-		content = content.replace(/\n/g, "<br/>");
-		// tabs
+	formatTextAsHtml: function(content, includeSpaces) {
+		content = content.replace(/&/g, "&amp;");
+		content = content.replace(/</g, "&lt;");
+		content = content.replace(/>/g, "&gt;");
 		content = content.replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;");
+		content = content.replace(/\n/g, "<br/>");
+		if (includeSpaces) {
+			content = content.replace(/[ ]/g, "&nbsp;");
+		}
 		return content;
+	},
+	// interprets inline things as html
+	formatContentAsHtml: function(content, parameters) {
+		// we currently don't encode, this allows for inline html annotating!
+		// content = nabu.formatters.markdown.formatTextAsHtml(content);
+
+		// bold + italic
+		content = content.replace(/\*\*\*(.*?)\*\*\*/g, "<em>$1</em>");
+		// bold
+		content = content.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+		content = content.replace(/__(.*?)__/g, "<b>$1</b>");
+		// italic
+		content = content.replace(/\*(.*?)\*/g, "<u>$1</u>");
+		content = content.replace(/_(.*?)_/g, "<u>$1</u>");
+		// delete
+		content = content.replace(/~~(.*?)~~/g, "<del>$1</del>");
+		// CUSTOM
+		// add
+		content = content.replace(/\+\+(.*?)\+\+/g, "<ins>$1</ins>");
+		// code
+		content = content.replace(/``(.*?)``/g, "<code>$1</code>");
+		content = content.replace(/`(.*?)`/g, "<code>$1</code>");
+
+		// CUSTOM
+		// video embeds
+		content = content.replace(/!!\[(.*?)\]\((.*?)\)/g, "<video alt='$1' class='is-video is-variant-article' controls frameborder='0' allowfullscreen><source src='$2'/></video>");
+
+		// image embeds
+		content = content.replace(/!\[(.*?)\]\((.*?)\)/g, "<img alt='$1' src='$2' class='is-image is-variant-article'/>");
+
+		// external links
+		content = content.replace(/\[(.*?)\]\(((?:http|https):\/\/.*?)\)/g, "<a rel='norel nofollow noopener' href='$2' class='is-link is-variant-article is-target-external'>$1</a>");
+
+		// internal links
+		content = content.replace(/\[(.*?)\]\((.*?)\)/g, "<a href='$2' class='is-link is-variant-article is-target-internal'>$1</a>");
+
+		// whitespace
+		content = content.replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
+		content = content.replace("\n", "<br/>");
+
+		// CUSTOM
+		// tags
+		if (parameters && parameters.tagUrl) {
+			content = content.replace(/(^|[\s]+)@([\w/-]+)/g, "$1<a class='is-link is-variant-tag is-target-internal' href='" + parameters.tagUrl + "$2'>$2</a>");
+		}
+
+		return content;
+	},
+	encodeComments: function(content, singleLineRegex, multiLineRegex) {
+		// we want to preprocess comments and strings, we don't want to accidently highlight stuff in there
+		// multiline comments
+		var multilineComments = [];
+		if (multiLineRegex) {
+			while (content.match(multiLineRegex)) {
+				var comment = content.match(multiLineRegex)[0];
+				content = content.replace(comment, "::encoded-multi-comment-" + multilineComments.length + "::");
+				multilineComments.push(comment);
+			}
+		}
+		
+		var singlelineComments = [];
+		if (singleLineRegex) {
+			while (content.match(singleLineRegex)) {
+				var comment = content.match(singleLineRegex)[0];
+				content = content.replace(comment, "::encoded-single-comment-" + singlelineComments.length + "::");
+				singlelineComments.push(comment);
+			}
+		}
+		return {
+			single: singlelineComments,
+			multi: multilineComments,
+			content: content
+		}
+	},
+	decodeComments: function(content, comments) {
+		comments.single.forEach(function(comment, index) {
+			content = content.replace("::encoded-single-comment-" + index + "::", "<span class='is-comment is-variant-single'>" + nabu.formatters.markdown.formatTextAsHtml(comment) + "</span>");
+		});
+		comments.multi.forEach(function(comment, index) {
+			content = content.replace("::encoded-multi-comment-" + index + "::", "<span class='is-comment is-variant-multi'>" + nabu.formatters.markdown.formatTextAsHtml(comment) + "</span>");
+		});
+		return content;
+	},
+	formatCodeAsHtml: function(content, syntax, parameters) {
+		if (!syntax || !nabu.formatters.markdown.syntaxProviders[syntax]) {
+			syntax = "text";
+		}
+		return nabu.formatters.markdown.syntaxProviders[syntax](content, parameters);
 	},
 	parse: function(content, parameters) {
 		// if you pass in an element
@@ -200,7 +367,7 @@ nabu.formatters.markdown = {
 			var parseLine = true;
 			// if we are for example in a code block, we don't interpret the content, this is for later processing
 			if (parseEvaluator) {
-				parseLine = parseEvaluator(line);
+				parseLine = parseEvaluator(line, lines[i]);
 			}
 			if (!parseLine) {
 				continue;
@@ -265,14 +432,15 @@ nabu.formatters.markdown = {
 						type: "code",
 						syntax: syntax.length > 0 ? syntax : null
 					});
-					parseEvaluator = function(content) {
+					parseEvaluator = function(content, raw) {
 						// if we have the end of the code block, stop the parse evaluator
 						if (content == "````") {
+							finalizeBlock();
 							parseEvaluator = null;
 						}
 						// otherwise, just append it
 						else {
-							pushContent(content);
+							pushContent(raw);
 						}
 					}
 				}
@@ -283,14 +451,15 @@ nabu.formatters.markdown = {
 						type: "code",
 						syntax: syntax.length > 0 ? syntax : null
 					});
-					parseEvaluator = function(content) {
+					parseEvaluator = function(content, raw) {
 						// if we have the end of the code block, stop the parse evaluator
 						if (content == "```") {
+							finalizeBlock();
 							parseEvaluator = null;
 						}
 						// otherwise, just append it
 						else {
-							pushContent(content);
+							pushContent(raw);
 						}
 					}
 				}
