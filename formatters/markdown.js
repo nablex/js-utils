@@ -2,10 +2,137 @@ if (!nabu) { var nabu = {} };
 if (!nabu.formatters) { nabu.formatters = {} };
 
 nabu.formatters.markdown = {
-	asHtml: function(content, parameters) {
-		
+	asHtml: function(blocks, parameters) {
+		var html = [];
+		// the current list stack (can be mixture of ul and ol)
+		var listStack = [];
+		var reduceList = function(amount) {
+			for (var i = (amount ? amount : listStack.length) - 1; i >= 0; i--) {
+				var includeTrailing = listStack.length >= 2;
+				// a nested list must be within a <li> itself!
+				html.push("</" + listStack.pop() + ">" + (includeTrailing ? "</li>" : ""));
+			}
+		}
+		var pushList = function(tag) {
+			// a nested list must be within a <li> itself!
+			html.push((listStack.length > 0 ? "<li>" : "") + "<" + tag + " class='is-list'>");
+			listStack.push(tag);
+		}
+		blocks.forEach(function(block) {
+			// terminate any lists before continuing
+			if (block.type != "ul" && block.type != "ol" && listStack.length > 0) {
+				reduceList();
+			}
+			var formatted = [];
+			// regular content
+			if (["h1", "h2", "h3", "h4", "h5", "h6", "p"].indexOf(block.type) >= 0) {
+				formatted.push(
+					"<" + block.type + " class='is-" + block.type + " is-variant-article'>"
+					+ nabu.formatters.markdown.formatContentAsHtml(block.content)
+					+ "</" + block.type + ">"
+				);
+			}
+			else if (block.type == "ul" || block.type == "ol") {
+				// if our depth is bigger than the current list stack, we need to add some lists
+				while (block.depth > listStack.length) {
+					formatted.push("<ul class='is-list'>");
+					listStack.push({
+						tag: "ul",
+						supporting: true
+					});
+				}
+				if (block.depth < listStack.length - 1) {
+					reduceList(listStack.length - (block.depth + 1));
+				}
+				console.log("depth is", block.depth, listStack.length);
+				// we need to add one more list
+				if (block.depth == listStack.length) {
+					pushList(block.type);
+				}
+				// otherwise make sure we have the correct type of list
+				else if (listStack[listStack.length - 1] != block.type) {
+					reduceList(1);
+					pushList(block.type);
+				}
+				formatted.push(
+					"<li>"
+					+ nabu.formatters.markdown.formatContentAsHtml(block.content)
+					+ "</li>"
+				);
+			}
+			else if (block.type == "table") {
+				formatted.push("<table class='is-table is-variant-article'>");
+				var headers = block.rows.filter(function(x) {
+					return x.header;
+				});
+				var body = block.rows.filter(function(x) {
+					return !x.header;
+				});
+				if (headers.length) {
+					formatted.push("<thead>");
+					headers.forEach(function(header) {
+						formatted.push("<tr>");
+						header.columns.forEach(function(column) {
+							formatted.push(
+								"<th colspan='" + (column.colspan ? column.colspan : 1) + "'>"
+								+ nabu.formatters.markdown.formatContentAsHtml(column.content)
+								+ "</th>"
+							);
+						});
+						formatted.push("</tr>");
+					});
+					formatted.push("</thead>");
+				}
+				if (body.length) {
+					formatted.push("<tbody>");
+					body.forEach(function(row) {
+						formatted.push("<tr>");
+						row.columns.forEach(function(column) {
+							formatted.push(
+								"<td colspan='" + (column.colspan ? column.colspan : 1) + "'>"
+								+ nabu.formatters.markdown.formatContentAsHtml(column.content)
+								+ "</td>"
+							);
+						});
+						formatted.push("</tr>");
+					});
+					formatted.push("</tbody>");
+				}
+				formatted.push("</table>");
+			}
+			else if (block.type == "block") {
+				formatted.push("<div class='is-" + (block.direction ? block.direction : "row") + "'>");
+				nabu.utils.arrays.merge(formatted, nabu.formatters.markdown.asHtml(block.blocks, parameters));
+				formatted.push("</div>");
+			}
+			nabu.utils.arrays.merge(html, formatted);
+		});
+		// finish any lists we were building
+		while (listStack.length) {
+			reduceList();
+		}
+		for (var i = 0; i < html.length - 1; i++) {
+			// if our current element ends with </li>
+			if (html[i].indexOf("</li>") == html[i].length - "</li>".length) {
+				// and the next element is a supporting <li> injected for nested lists
+				if (html[i + 1].indexOf("<li><ul") == 0 || html[i + 1].indexOf("<li><ol") == 0) {
+					// we remove the </li> from the previous entry and the <li> from the latter entry
+					html[i] = html[i].substring(0, html[i].length - "</li>".length);
+					html[i + 1] = html[i + 1].substring("<li>".length);
+				}
+			}
+		}
+		return html.join("\n");
 	},
-	parseBlocks: function(content, parameters) {
+	// interprets inline things as html
+	formatContentAsHtml: function(content) {
+		// line feeds
+		content = content.replace(/\n/g, "<br/>");
+		// tabs
+		content = content.replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;");
+		return content;
+	},
+	parse: function(content, parameters) {
 		// if you pass in an element
 		if (content.innerHTML) {
 			content = content.innerHTML;
@@ -175,12 +302,17 @@ nabu.formatters.markdown = {
 				// so for instance content between two -> is grouped in a block marked as a column layout
 				// you can nest further with for instance --> to create a nested block with column layout or --^ to create a nested block with row layout
 				// combine this with say images or videos or stuff like that to create prettier layouts
-				else if (line.match(/^[-]+(>|\^)$/)) {
+				// you can add configuration to do slightly more dynamic layouting, for example:
+				// -> 1,2
+				// the default configuration for columns is "dimensions" so this is basically the flex dimension of each child (any additional children have 1)
+				// so in this example we want the first child to take up 1/3 of the width and the second to take up 2/3
+				else if (line.match(/^[-]+(>|\^).*/)) {
+					var configuration = line.replace(/^[-]+(?:>|\^)(.*)/, "$1").trim();
+					line = line.replace(/^([-]+(?:>|\^)).*/, "$1").trim();
 					var depth = line.length - line.replace(/^[-]+/, "").length;
-					var direction = line.indexOf(">") > 0 ? "column" : "row";
+					var direction = line.indexOf(">") > 0 ? "row" : "column";
 					// we are finishing the current block
 					if (blockWrapper && blockWrapper.direction == direction && blockWrapper.depth == depth) {
-						console.log("stopping block", depth);
 						// inherit from potentially parent nested
 						var parent = blockWrapper.parent;
 						blockWrapper.parent = null;
@@ -200,11 +332,24 @@ nabu.formatters.markdown = {
 							parseEvaluator: parseEvaluator
 						}
 						blockWrapper = {
+							configuration: [],
 							parent: parent,
 							type: "block",
 							direction: direction,
 							depth: depth,
 							blocks: []
+						}
+						if (configuration) {
+							configuration.split(";").forEach(function(single) {
+								var index = single.indexOf("=");
+								var key = index > 0 ? single.substring(0, index) : null;
+								var value = index > 0 ? single.substring(index + 1) : single;
+								// the default configuration is "dimensions" where you can state (in flex terminology) how big something is (default is 1)
+								blockWrapper.configuration.push({
+									key: key == null ? "dimensions" : key,
+									value: value
+								})
+							});
 						}
 						// make sure we push it to the parent blocks as well
 						blocks.push(blockWrapper);
@@ -237,7 +382,7 @@ nabu.formatters.markdown = {
 						// the depth of the list is determined by the amount of whitespace in front of it
 						depth: lines[i].indexOf(line.substring(0, 1)),
 						number: parseInt(line.replace(/^([0-9]+)\..*/, "$1")),
-						content: line.substring(1).trim()
+						content: line.replace(/^[0-9]+\.(.*)/, "$1").trim()
 					}, true)
 				}
 
