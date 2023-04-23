@@ -9,6 +9,7 @@ nabu.formatters.markdown = {
 				content, 
 				/--.*$/m, 
 				null, 
+				/\b([\w.]+)\(/g,
 				nabu.formatters.markdown.keywords.sql,
 				parameters
 			)
@@ -18,6 +19,7 @@ nabu.formatters.markdown = {
 				content, 
 				/#.*$/m, 
 				null, 
+				/\b([\w.]+)\(/g,
 				nabu.formatters.markdown.keywords.default,
 				parameters
 			)
@@ -28,6 +30,7 @@ nabu.formatters.markdown = {
 				content, 
 				/\/\/.*$/m, 
 				/\/\*.*\*\//s, 
+				/\b([\w]+)\(/g,
 				nabu.formatters.markdown.keywords.default,
 				parameters
 			)
@@ -38,22 +41,23 @@ nabu.formatters.markdown = {
 		}
 	},
 	keywords: {
-		sql: ["select", "update", "delete", "insert", "create", "drop", "from", "where", "order by", "group by", "limit", "offset", "table", "index"],
+		sql: ["select", "update", "delete", "insert", "create", "drop", "from", "where", "order by", "group by", "limit", "offset", "table", "index", "and", "or", "current_timestamp"],
 		default: ["abstract", "continue", "for", "new", "switch", "assert", "default", "goto", "package", "synchronized", "boolean", "do", "if", "private", "this", "break", "double", "implements", "protected", "throw", "byte", "else", "import", "public", "throws", "case", "enum", "instanceof", "return", "transient", "catch",
 			"extends", "int", "short", "try", "char", "final", "interface", "static", "void", "class", "finally", "long", "strictfp", "volatile", "const", "float", "native", "super", "while"]
 	},
-	encodeCode: function(content, singleLineRegex, multiLineRegex, keywords, parameters) {
+	encodeCode: function(content, singleLineRegex, multiLineRegex, methodRegex, keywords, parameters) {
+		// we assume the prevalence of strings in comments is less than comments in strings...?
+		var strings = nabu.formatters.markdown.encodeStrings(
+			content
+		);
+		content = strings.content;
+		
 		var comments = nabu.formatters.markdown.encodeComments(
 			content,
 			singleLineRegex, 
 			multiLineRegex
 		);
 		content = comments.content;
-
-		var strings = nabu.formatters.markdown.encodeStrings(
-			content
-		);
-		content = strings.content;
 
 		// already do basic encoding before we generate html
 		content = nabu.formatters.markdown.formatTextAsHtml(content, true);
@@ -64,7 +68,7 @@ nabu.formatters.markdown = {
 		}
 
 		// methods
-		content = content.replaceAll(/\b([\w.]+)\(/g, "<span class='is-code-method'>$1</span>(");
+		content = content.replaceAll(methodRegex, "<span class='is-code-method'>$1</span>(");
 		
 		content = nabu.formatters.markdown.decodeComments(content, comments);
 		content = nabu.formatters.markdown.decodeStrings(content, strings);
@@ -72,6 +76,8 @@ nabu.formatters.markdown = {
 	},
 	asHtml: function(blocks, parameters) {
 		var html = [];
+		// we used named promises with an id so we can inject the resolved value
+		var promises = {};
 		// the current list stack (can be mixture of ul and ol)
 		var listStack = [];
 		var reduceList = function(amount) {
@@ -101,15 +107,23 @@ nabu.formatters.markdown = {
 				);
 			}
 			else if (block.type == "code") {
-				formatted.push(
-					"<code target='" + (block.syntax ? block.syntax : "text") + "'>"
-					+ nabu.formatters.markdown.formatCodeAsHtml(block.content, block.syntax, parameters)
-					+ "</code>"
-				);
+				var result = nabu.formatters.markdown.formatCodeAsHtml(block.content, block.syntax, parameters);
+				// if we get back a promise, we need to resolve it asynchronously
+				// we will inject a placeholder to be replaced later
+				if (result.then) {
+					var id = crypto ? crypto.randomUUID() : "code-" + Math.random();
+					formatted.push("<code class='is-code is-variant-article' target='" + (block.syntax ? block.syntax : "text") + "' data-resolve-id='" + id + "'>");
+					promises[id] = result;
+				}
+				else {
+					formatted.push("<code class='is-code is-variant-article' target='" + (block.syntax ? block.syntax : "text") + "'>");
+					formatted.push(result);
+				}
+				formatted.push("</code>");
 			}
 			else if (block.type == "quote") {
 				formatted.push(
-					"<blockquote>"
+					"<blockquote class='is-quote is-variant-article'>"
 					+ nabu.formatters.markdown.formatTextAsHtml(block.content, parameters)
 					+ "</blockquote>"
 				);
@@ -184,7 +198,9 @@ nabu.formatters.markdown = {
 			}
 			else if (block.type == "block") {
 				formatted.push("<div class='is-" + (block.direction ? block.direction : "row") + " is-variant-article'>");
-				nabu.utils.arrays.merge(formatted, nabu.formatters.markdown.asHtml(block.blocks, parameters));
+				var resultHtml = nabu.formatters.markdown.asHtml(block.blocks, parameters);
+				formatted.push(resultHtml.content);
+				nabu.utils.objects.merge(promises, resultHtml.promises);
 				formatted.push("</div>");
 			}
 			nabu.utils.arrays.merge(html, formatted);
@@ -204,7 +220,29 @@ nabu.formatters.markdown = {
 				}
 			}
 		}
-		return html.join("\n");
+		return {
+			content: nabu.formatters.markdown.replaceVariables(html.join("\n"), parameters),
+			promises: promises
+		}
+	},
+	replacePromises: function(promises) {
+		Object.keys(promises).forEach(function(x) {
+			promises[x].then(function(result) {
+				var element = document.querySelector("[data-resolve-id=\"" + x + "\"]");
+				if (element && result) {
+					element.innerHTML = result;
+				}
+			})
+		})
+	},
+	// you can use variables with the syntax ${}. this allows you to create templates
+	replaceVariables: function(html, parameters) {
+		if (parameters && parameters.variables) {
+			Object.keys(parameters.variables).forEach(function(key) {
+				html = html.replace(new RegExp("\\$\\{" + key + "\\}", "g"), parameters.variables[key]);
+			});
+		}
+		return html;
 	},
 	formatTextAsHtml: function(content, includeSpaces) {
 		content = content.replace(/&/g, "&amp;");
@@ -236,8 +274,8 @@ nabu.formatters.markdown = {
 		// add
 		content = content.replace(/\+\+(.*?)\+\+/g, "<ins>$1</ins>");
 		// code
-		content = content.replace(/``(.*?)``/g, "<code>$1</code>");
-		content = content.replace(/`(.*?)`/g, "<code>$1</code>");
+		content = content.replace(/``(.*?)``/g, "<code class='is-code is-variant-inline'>$1</code>");
+		content = content.replace(/`(.*?)`/g, "<code class='is-code is-variant-inline'>$1</code>");
 
 		// CUSTOM
 		// video embeds
