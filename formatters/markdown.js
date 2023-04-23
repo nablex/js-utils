@@ -140,7 +140,6 @@ nabu.formatters.markdown = {
 				if (block.depth < listStack.length - 1) {
 					reduceList(listStack.length - (block.depth + 1));
 				}
-				console.log("depth is", block.depth, listStack.length);
 				// we need to add one more list
 				if (block.depth == listStack.length) {
 					pushList(block.type);
@@ -197,10 +196,22 @@ nabu.formatters.markdown = {
 				formatted.push("</table>");
 			}
 			else if (block.type == "block") {
+				// we might want to set some custom style stuff
 				formatted.push("<div class='is-" + (block.direction ? block.direction : "row") + " is-variant-article'>");
-				var resultHtml = nabu.formatters.markdown.asHtml(block.blocks, parameters);
-				formatted.push(resultHtml.content);
-				nabu.utils.objects.merge(promises, resultHtml.promises);
+				var reverseDirection = block.direction == "column" ? "row" : "column";
+				var dimensionConfiguration = block.configuration.filter(function(x) {
+					return x.key == "dimensions";
+				})[0];
+				var dimensions = dimensionConfiguration ? dimensionConfiguration.value.split(",") : [];
+				block.blocks.forEach(function(block, index) {
+					var style = "";
+					style += "flex-basis: 0; flex-grow: " + (index < dimensions.length ? dimensions[index] : "1") + ";";
+					formatted.push("<div class='is-" + reverseDirection + " is-variant-article' style='" + style + "'>");
+					var resultHtml = nabu.formatters.markdown.asHtml([block], parameters);
+					formatted.push(resultHtml.content);
+					nabu.utils.objects.merge(promises, resultHtml.promises);
+					formatted.push("</div>");
+				});
 				formatted.push("</div>");
 			}
 			nabu.utils.arrays.merge(html, formatted);
@@ -251,7 +262,7 @@ nabu.formatters.markdown = {
 		content = content.replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;");
 		content = content.replace(/\n/g, "<br/>");
 		if (includeSpaces) {
-			content = content.replace(/[ ]/g, "&nbsp;");
+			content = content.replace(/[ ]{2}/g, "&nbsp;&nbsp;");
 		}
 		return content;
 	},
@@ -310,11 +321,9 @@ nabu.formatters.markdown = {
 		while (startIndex >= 0) {
 			// if we have match, find the end
 			if (match != null) {
-				console.log("matching", match);
 				index = content.indexOf(match, startIndex + 1);
 				if (index >= 0) {
 					var string = content.substring(startIndex, index + 1);
-					console.log("found string", string);
 					content = content.replace(string, "::encoded-string-" + strings.length + "::");
 					strings.push(string);
 					match = null;
@@ -338,7 +347,6 @@ nabu.formatters.markdown = {
 				else {
 					startIndex = -1;
 				}
-				console.log("found", match,singleIndex,doubleIndex, startIndex, content);
 			}
 		}
 		return {
@@ -567,6 +575,7 @@ nabu.formatters.markdown = {
 				// combine this with say images or videos or stuff like that to create prettier layouts
 				// you can add configuration to do slightly more dynamic layouting, for example:
 				// -> 1,2
+				// <-
 				// the default configuration for columns is "dimensions" so this is basically the flex dimension of each child (any additional children have 1)
 				// so in this example we want the first child to take up 1/3 of the width and the second to take up 2/3
 				else if (line.match(/^[-]+(>|\^).*/)) {
@@ -574,6 +583,38 @@ nabu.formatters.markdown = {
 					line = line.replace(/^([-]+(?:>|\^)).*/, "$1").trim();
 					var depth = line.length - line.replace(/^[-]+/, "").length;
 					var direction = line.indexOf(">") > 0 ? "row" : "column";
+					// finalize whatever block we were working on
+					finalizeBlock();
+					var parent = {
+						blockWrapper: blockWrapper,
+						blocks: blocks,
+						parseEvaluator: parseEvaluator
+					}
+					blockWrapper = {
+						configuration: [],
+						parent: parent,
+						type: "block",
+						direction: direction,
+						depth: depth,
+						blocks: []
+					}
+					if (configuration) {
+						configuration.split(";").forEach(function(single) {
+							var index = single.indexOf("=");
+							var key = index > 0 ? single.substring(0, index) : null;
+							var value = index > 0 ? single.substring(index + 1) : single;
+							// the default configuration is "dimensions" where you can state (in flex terminology) how big something is (default is 1)
+							blockWrapper.configuration.push({
+								key: key == null ? "dimensions" : key,
+								value: value
+							})
+						});
+					}
+					// make sure we push it to the parent blocks as well
+					blocks.push(blockWrapper);
+					blocks = blockWrapper.blocks;
+				}
+				else if (line.match(/^(<|\^)[-]+$/)) {
 					// we are finishing the current block
 					if (blockWrapper && blockWrapper.direction == direction && blockWrapper.depth == depth) {
 						// inherit from potentially parent nested
@@ -584,39 +625,6 @@ nabu.formatters.markdown = {
 						parseEvaluator = parent.parseEvaluator;
 						blocks = parent.blocks;
 						blockWrapper = parent.blockWrapper;
-					}
-					// otherwise, we start a new nested
-					else {
-						// finalize whatever block we were working on
-						finalizeBlock();
-						var parent = {
-							blockWrapper: blockWrapper,
-							blocks: blocks,
-							parseEvaluator: parseEvaluator
-						}
-						blockWrapper = {
-							configuration: [],
-							parent: parent,
-							type: "block",
-							direction: direction,
-							depth: depth,
-							blocks: []
-						}
-						if (configuration) {
-							configuration.split(";").forEach(function(single) {
-								var index = single.indexOf("=");
-								var key = index > 0 ? single.substring(0, index) : null;
-								var value = index > 0 ? single.substring(index + 1) : single;
-								// the default configuration is "dimensions" where you can state (in flex terminology) how big something is (default is 1)
-								blockWrapper.configuration.push({
-									key: key == null ? "dimensions" : key,
-									value: value
-								})
-							});
-						}
-						// make sure we push it to the parent blocks as well
-						blocks.push(blockWrapper);
-						blocks = blockWrapper.blocks;
 					}
 				}
 
@@ -713,7 +721,6 @@ nabu.formatters.markdown = {
 						var pipeIndex = 0;
 						// as long as we have pipe indexes, we have columns
 						while (pipeIndex >= 0) {
-							console.log("line so far", line, pipeIndex);
 							// we remove the leading pipe (there should be only one at this point)
 							line = line.replace(/^[|]+/, "");
 							// we get the next pipe index
