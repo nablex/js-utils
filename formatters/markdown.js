@@ -308,7 +308,10 @@ nabu.formatters.markdown = {
 		// CUSTOM
 		// tags
 		if (parameters && parameters.tagUrl) {
-			content = content.replace(/(^|[\s]+)@([\w/-]+)/g, "$1<a class='is-link is-variant-tag is-target-internal' href='" + parameters.tagUrl + "$2'>$2</a>");
+			content = content.replace(/(^|[\s]+)#([\w/-]+)/g, "$1<a class='is-link is-variant-tag is-target-internal' href='" + parameters.tagUrl + "$2'>$2</a>");
+		}
+		if (parameters && parameters.userUrl) {
+			content = content.replace(/(^|[\s]+)@([\w/-]+)/g, "$1<a class='is-link is-variant-user is-target-internal' href='" + parameters.userUrl + "$2'>$2</a>");
 		}
 
 		return content;
@@ -583,8 +586,11 @@ nabu.formatters.markdown = {
 					line = line.replace(/^([-]+(?:>|\^)).*/, "$1").trim();
 					var depth = line.length - line.replace(/^[-]+/, "").length;
 					var direction = line.indexOf(">") > 0 ? "row" : "column";
+					console.log("starting block", line);
 					// finalize whatever block we were working on
-					finalizeBlock();
+					if (currentBlock && currentBlock.type != "block") {
+						finalizeBlock();
+					}
 					var parent = {
 						blockWrapper: blockWrapper,
 						blocks: blocks,
@@ -615,8 +621,12 @@ nabu.formatters.markdown = {
 					blocks = blockWrapper.blocks;
 				}
 				else if (line.match(/^(<|\^)[-]+$/)) {
+					var depth = line.length - line.replace(/[-]+$/, "").length;
+					var direction = line.indexOf("<") == 0 ? "row" : "column";
+					console.log("stopping block", line, blockWrapper, direction, depth);
 					// we are finishing the current block
 					if (blockWrapper && blockWrapper.direction == direction && blockWrapper.depth == depth) {
+						console.log("actually stopping!");
 						// inherit from potentially parent nested
 						var parent = blockWrapper.parent;
 						blockWrapper.parent = null;

@@ -50,11 +50,15 @@ nabu.utils.elements = {
 			&& rect.bottom <= (window.innerHeight || document.documentElement.clientHeight)
 			&& rect.right <= (window.innerWidth || document.documentElement.clientWidth);
 	},
-	sanitize: function(element, allowDataAttributes) {
+	sanitize: function(element, parameters) {
 		var allowedTags = ["a", "b", "i", "u", "em", "strong", "h1", "h2", "h3", "h4", "h5", "h6", "h7", "p", "table", "ul", 
 			"li", "tr", "td", "thead", "tbody", "th", "ol", "font", "br", "span", "div", "pre", "blockquote", "code", "img", "video", "source", "article"];
+		// we dont allow the form
+		if (parameters && parameters.allowFormElements) {
+			allowedTags.push("input");
+		}
 		var allowedAttributes = ["style", "href", "target", "rel", "src", "alt", "title", "class", "colspan", "rowspan", "controls", "frameborder", "allowfullscreen"];
-		return nabu.utils.elements.clean(element, allowedTags, null, allowedAttributes, null, allowDataAttributes);
+		return nabu.utils.elements.clean(element, allowedTags, null, allowedAttributes, null, parameters && parameters.allowDataAttributes);
 	},
 	clean: function(element, allowedTags, tagsToRemove, allowedAttributes, attributesToRemove, allowDataAttributes) {
 		var returnAsString = false;
