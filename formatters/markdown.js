@@ -4,12 +4,77 @@ if (!nabu.formatters) { nabu.formatters = {} };
 nabu.formatters.markdown = {
 	// each provider should be able to generate html from a syntax
 	syntaxProviders: {
+		// needs some very specific handling
+		xml: function(content, parameters) {
+			var result = "";
+			var index = 0;
+			while (index >= 0) {
+				index = content.indexOf("<");
+				// we have some other content at the start
+				if (index > 0) {
+					result += content.substring(0, index);
+					content = content.substring(index);
+					// it is now at the front
+					index = 0;
+				}
+				if (index == 0) {
+					// we are now in a tag, let's get the start of the tag and mark it as a variable
+					var match = content.match(/^[^\s>]+/);
+					result += "<span class='is-code-variable'>" + nabu.formatters.markdown.formatTextAsHtml(match[0]) + "</span>";
+					content = content.substring(match[0].length);
+					// let's see where the end is
+					var end = content.indexOf(">");
+					// we have stuff between our tag and the end
+					if (end > 0) {
+						var tagContent = content.substring(0, end);
+						content = content.substring(end);
+						end = 0;
+						var strings = nabu.formatters.markdown.encodeStrings(tagContent);
+						tagContent = strings.content;
+						tagContent = tagContent.replace(/\b([\w]+[\s]*)=/g, "<span class='is-code-keyword'>$1=</span>")
+						result += nabu.formatters.markdown.decodeStrings(tagContent, strings);
+					}
+					// fix the end tag
+					if (end == 0) {
+						result += "<span class='is-code-variable'>" + nabu.formatters.markdown.formatTextAsHtml(">") + "</span>";
+						content = content.substring(1);
+					}
+				}
+			}
+			return result;
+		},
+		html: "xml",
+		css: function(content, parameters) {
+			return nabu.formatters.markdown.encodeCode(
+				content, 
+				null, 
+				/\/\*.*\*\//s, 
+				/\b(:[\w]+)[\s]*\(/g,
+				/(\.[a-zA-Z]+[\w-]*)\b/g,
+				nabu.formatters.markdown.keywords.css,
+				parameters
+			)
+		},
+		scss: function(content, parameters) {
+			var keywords = ["@mixin", "@include"];
+			nabu.utils.arrays.merge(keywords, nabu.formatters.markdown.keywords.css);
+			return nabu.formatters.markdown.encodeCode(
+				content, 
+				/\/\/.*$/m, 
+				/\/\*.*\*\//s, 
+				/\b([:\w]+)[\s]*\(/g,
+				/((?:\$|\.)[a-zA-Z]+[\w-]*)\b/g,
+				keywords,
+				parameters
+			)
+		},
 		sql: function(content, parameters) {
 			return nabu.formatters.markdown.encodeCode(
 				content, 
 				/--.*$/m, 
 				null, 
 				/\b([\w.]+)\(/g,
+				null,
 				nabu.formatters.markdown.keywords.sql,
 				parameters
 			)
@@ -20,6 +85,7 @@ nabu.formatters.markdown = {
 				/#.*$/m, 
 				null, 
 				/\b([\w.]+)\(/g,
+				null,
 				nabu.formatters.markdown.keywords.default,
 				parameters
 			)
@@ -31,21 +97,24 @@ nabu.formatters.markdown = {
 				/\/\/.*$/m, 
 				/\/\*.*\*\//s, 
 				/\b([\w]+)\(/g,
+				null,
 				nabu.formatters.markdown.keywords.default,
 				parameters
 			)
 		},
 		javascript: "java",
+		json: "java",
 		text: function(content, parameters) {
 			return nabu.formatters.markdown.formatTextAsHtml(content, true);
 		}
 	},
 	keywords: {
+		css: ["!default", "!important", "@media"],
 		sql: ["select", "update", "delete", "insert", "create", "drop", "from", "where", "order by", "group by", "limit", "offset", "table", "index", "and", "or", "current_timestamp"],
 		default: ["abstract", "continue", "for", "new", "switch", "assert", "default", "goto", "package", "synchronized", "boolean", "do", "if", "private", "this", "break", "double", "implements", "protected", "throw", "byte", "else", "import", "public", "throws", "case", "enum", "instanceof", "return", "transient", "catch",
-			"extends", "int", "short", "try", "char", "final", "interface", "static", "void", "class", "finally", "long", "strictfp", "volatile", "const", "float", "native", "super", "while"]
+			"extends", "int", "short", "try", "char", "final", "interface", "static", "void", "class", "finally", "long", "strictfp", "volatile", "const", "float", "native", "super", "while", "true", "false"]
 	},
-	encodeCode: function(content, singleLineRegex, multiLineRegex, methodRegex, keywords, parameters) {
+	encodeCode: function(content, singleLineRegex, multiLineRegex, methodRegex, variableRegex, keywords, parameters) {
 		// we assume the prevalence of strings in comments is less than comments in strings...?
 		var strings = nabu.formatters.markdown.encodeStrings(
 			content
@@ -64,11 +133,14 @@ nabu.formatters.markdown = {
 				
 		// keywords
 		if (keywords && keywords.length) {
-			content = content.replaceAll(new RegExp("\\b(" + keywords.join("|") + ")\\b", "g"), "<span class='is-code-keyword'>$1</span>");
+			content = content.replaceAll(new RegExp("(?:\\b|\\B)(" + keywords.join("|") + ")(?:\\b|\\B)", "g"), "<span class='is-code-keyword'>$1</span>");
 		}
 
 		// methods
 		content = content.replaceAll(methodRegex, "<span class='is-code-method'>$1</span>(");
+
+		// variables
+		content = content.replaceAll(variableRegex, "<span class='is-code-variable'>$1</span>");
 		
 		content = nabu.formatters.markdown.decodeComments(content, comments);
 		content = nabu.formatters.markdown.decodeStrings(content, strings);
@@ -402,7 +474,10 @@ nabu.formatters.markdown = {
 		if (!syntax || !nabu.formatters.markdown.syntaxProviders[syntax]) {
 			syntax = "text";
 		}
-		return nabu.formatters.markdown.syntaxProviders[syntax](content, parameters);
+		while (typeof(syntax) == "string" || syntax instanceof String) {
+			syntax = nabu.formatters.markdown.syntaxProviders[syntax];
+		}
+		return syntax(content, parameters);
 	},
 	parse: function(content, parameters) {
 		// if you pass in an element
