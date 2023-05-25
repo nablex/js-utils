@@ -58,9 +58,9 @@ nabu.utils.elements = {
 			allowedTags.push("input");
 		}
 		var allowedAttributes = ["style", "href", "target", "rel", "src", "alt", "title", "class", "colspan", "rowspan", "controls", "frameborder", "allowfullscreen"];
-		return nabu.utils.elements.clean(element, allowedTags, null, allowedAttributes, null, parameters && parameters.allowDataAttributes);
+		return nabu.utils.elements.clean(element, allowedTags, null, allowedAttributes, null, parameters && parameters.allowDataAttributes, parameters && parameters.allowLinkIds);
 	},
-	clean: function(element, allowedTags, tagsToRemove, allowedAttributes, attributesToRemove, allowDataAttributes) {
+	clean: function(element, allowedTags, tagsToRemove, allowedAttributes, attributesToRemove, allowDataAttributes, allowLinkIds) {
 		var returnAsString = false;
 		// previously we checked whether or not the incoming element is a string
 		// typeof(element) == "string"
@@ -78,6 +78,9 @@ nabu.utils.elements = {
 			if (allowedAttributes || attributesToRemove) {
 				for (var j = child.attributes.length - 1; j >= 0; j--) {
 					var attr = child.attributes.item(j);
+					if (allowLinkIds && attr.name.toLowerCase() == "id" && child.tagName.toLowerCase() == "a") {
+						continue;
+					}
 					if (allowedAttributes && allowedAttributes.indexOf(attr.name) < 0) {
 						if (!allowDataAttributes || attr.name.indexOf("data-") < 0) {
 							child.removeAttribute(attr.name);

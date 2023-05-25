@@ -437,9 +437,6 @@ nabu.services.Router = function(parameters) {
 		if (!path) {
 			path = "/";
 		}
-		if (this.urlRewriter && this.urlRewriter.incoming) {
-			path = this.urlRewriter.incoming(path);
-		}
 		return path;
 	}
 	
@@ -605,13 +602,7 @@ nabu.services.Router = function(parameters) {
 
 	this.routeInitial = function(anchor, parameters, mask) {
 		var current = null;
-		// check for actual data route
-		if (self.useHash) {
-			current = self.findRoute(window.location.hash && window.location.hash.length > 1 ? window.location.hash.substring(1) : "/");
-		}
-		else {
-			current = self.findRoute(self.localizeUrl(window.location.pathname ? window.location.pathname : "/"));
-		}
+		current = self.findRoute(self.getPath());
 		if (self.useParents) {
 			return self.route(current ? current.route.alias : "unknown", current ? current.parameters : parameters, anchor, mask, true);
 		}

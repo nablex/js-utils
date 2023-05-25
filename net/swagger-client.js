@@ -18,7 +18,7 @@ nabu.services.SwaggerClient = function(parameters) {
 	this.remembering = false;
 	this.rememberPromise = null;
 	this.definitionProcessors = [];
-	this.language = application && application.configuration ? application.configuration.language : null;
+	this.language = null;
 	this.bearer = parameters.bearer;
 	this.toggledFeatures = [];
 	this.geoPosition = null;
@@ -35,8 +35,12 @@ nabu.services.SwaggerClient = function(parameters) {
 	if (!this.executor) {
 		if (nabu.utils && nabu.utils.ajax) {
 			this.executor = function(parameters) {
-				if (self.language) {
-					parameters.language = self.language;
+				var language = self.language;
+				if (!language) {
+					language = application && application.configuration && application.configuration.applicationLanguage != 'unavailable' ? application.configuration.applicationLanguage : null;
+				}
+				if (language) {
+					parameters.language = language;
 				}
 				var promise = new nabu.utils.promise();
 				if (parameters.map) {

@@ -158,4 +158,20 @@ nabu.services.ServiceManager = function() {
 		}
 		return new nabu.utils.promises(promises);
 	}
+
+	this.$switchLanguage = function() {
+		var promises = [];
+		for (var i = 0; i < this.$instances.length; i++) {
+			if (this.$instances[i].$initialized) {
+				if (this.$instances[i].$switchLanguage) {
+					var result = this.$instances[i].$switchLanguage();
+					this.$instances[i].$initialized = new Date();
+					if (result && result.then) {
+						promises.push(result);
+					}
+				}
+			}
+		}
+		return new nabu.utils.promises(promises);
+	}
 }

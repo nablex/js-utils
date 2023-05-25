@@ -172,6 +172,10 @@ nabu.formatters.markdown = {
 			var formatted = [];
 			// regular content
 			if (["h1", "h2", "h3", "h4", "h5", "h6", "p"].indexOf(block.type) >= 0) {
+				// if we have a header, inject a local anchor
+				if (block.type.indexOf("h") == 0) {
+					formatted.push("<a id='" + block.content.replace(/[^\w]+/g, "-").toLowerCase() + "'/>");
+				}
 				formatted.push(
 					"<" + block.type + " class='is-" + block.type + " is-variant-article'>"
 					+ nabu.formatters.markdown.formatContentAsHtml(block.content, parameters)
@@ -343,14 +347,23 @@ nabu.formatters.markdown = {
 		// we currently don't encode, this allows for inline html annotating!
 		// content = nabu.formatters.markdown.formatTextAsHtml(content);
 
+		// replace escaped with placeholders
+		content = content.replace(/\\\*/g, "::escaped-asterisk::");
+		content = content.replace(/\\_/g, "::escaped-underscore::");
+		content = content.replace(/\\+/g, "::escaped-plus::");
+		content = content.replace(/\\~/g, "::escaped-tilde::");
+		content = content.replace(/\\`/g, "::escaped-backtick::");
+		content = content.replace(/\\@/g, "::escaped-at::");
+		content = content.replace(/\\#/g, "::escaped-hashtag::");
+
 		// bold + italic
 		content = content.replace(/\*\*\*(.*?)\*\*\*/g, "<em>$1</em>");
 		// bold
 		content = content.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
 		content = content.replace(/__(.*?)__/g, "<b>$1</b>");
 		// italic
-		content = content.replace(/\*(.*?)\*/g, "<u>$1</u>");
-		content = content.replace(/_(.*?)_/g, "<u>$1</u>");
+		content = content.replace(/\*(.*?)\*/g, "<i>$1</i>");
+		content = content.replace(/_(.*?)_/g, "<i>$1</i>");
 		// delete
 		content = content.replace(/~~(.*?)~~/g, "<del>$1</del>");
 		// CUSTOM
@@ -370,13 +383,16 @@ nabu.formatters.markdown = {
 		// external links
 		content = content.replace(/\[(.*?)\]\(((?:http|https):\/\/.*?)\)/g, "<a rel='norel nofollow noopener' href='$2' class='is-link is-variant-article is-target-external'>$1</a>");
 
+		// fragment links: point to an embedded anchor on this page
+		content = content.replace(/\[(.*?)\]\((#.*?)\)/g, "<a href='" + window.location.pathname + "$2' class='is-link is-variant-article is-target-internal'>$1</a>");
+
 		// internal links
 		content = content.replace(/\[(.*?)\]\((.*?)\)/g, "<a href='$2' class='is-link is-variant-article is-target-internal'>$1</a>");
 
 		// whitespace
 		content = content.replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
 		content = content.replace("\n", "<br/>");
-
+		
 		// CUSTOM
 		// tags
 		if (parameters && parameters.tagUrl) {
@@ -385,6 +401,15 @@ nabu.formatters.markdown = {
 		if (parameters && parameters.userUrl) {
 			content = content.replace(/(^|[\s]+)@([\w/-]+)/g, "$1<a class='is-link is-variant-user is-target-internal' href='" + parameters.userUrl + "$2'>$2</a>");
 		}
+
+		// replace escaped with placeholders
+		content = content.replace(/::escaped-asterisk::/g, "*");
+		content = content.replace(/::escaped-underscore::/g, "_");
+		content = content.replace(/::escaped-plus::/g, "+");
+		content = content.replace(/::escaped-tilde::/g, "~");
+		content = content.replace(/::escaped-backtick::/g, "`");
+		content = content.replace(/::escaped-at::/g, "@");
+		content = content.replace(/::escaped-hashtag::/g, "#");
 
 		return content;
 	},
