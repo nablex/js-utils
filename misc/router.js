@@ -368,7 +368,8 @@ nabu.services.Router = function(parameters) {
 		}
 		// replace any straggling variables with the key word "default"
 		url = url.replace(/\{[^}]+}/, "default");
-		return self.useHash && url.substring(0, 1) != "#" ? "#" + url : (application && application.configuration ? application.configuration.root : "/") + url.replace(/^[/]+/, "");
+		// replace double slashes as well
+		return (self.useHash && url.substring(0, 1) != "#" ? "#" + url : (application && application.configuration ? application.configuration.root : "/") + url.replace(/^[/]+/, "")).replace(/[/]{2,}/, "/");
 	};
 	
 	this.getUrl = function() {

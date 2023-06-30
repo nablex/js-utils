@@ -434,6 +434,13 @@ nabu.services.SwaggerClient = function(parameters) {
 			}
 			element.items = resolved[element.items["$ref"]];
 		}
+		// if you have an inline array (so without ref), we still want to recursively resolve any definitions withing
+		else if (element.items && element.items.properties) {
+			element = nabu.utils.objects.deepClone(element);
+			Object.keys(element.items.properties).map(function(key) {
+				element.items.properties[key] = self.resolve(element.items.properties[key], resolved);
+			});
+		}
 		else if (element["$ref"]) {
 			if (!resolved[element["$ref"]]) {
 				resolved[element["$ref"]] = this.resolve(this.definition(element["$ref"]), resolved);
