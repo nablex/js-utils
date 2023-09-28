@@ -39,9 +39,19 @@ nabu.utils.elements = {
 		return null;
 	},
 	clear: function(element) {
+		var children = element.childNodes;
+		for (var i = children.length - 1; i >= 0; i--) {
+			var child = children.item(i);
+			var locked = child && child.getAttribute && child.getAttribute("locked") == "true";
+			if (!locked) {
+				element.removeChild(child);
+			}
+		}
+		/*
 		while(element.firstChild) {
 			element.removeChild(element.firstChild);
 		}
+		*/
 	},
 	inViewport: function(element) {
 		var rect = element.getBoundingClientRect();
