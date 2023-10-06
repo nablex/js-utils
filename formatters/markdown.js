@@ -161,7 +161,7 @@ nabu.formatters.markdown = {
 		}
 		var pushList = function(tag) {
 			// a nested list must be within a <li> itself!
-			html.push((listStack.length > 0 ? "<li>" : "") + "<" + tag + " class='is-list'>");
+			html.push((listStack.length > 0 ? "<li>" : "") + "<" + tag + " class='is-list is-variant-article'>");
 			listStack.push(tag);
 		}
 		blocks.forEach(function(block) {
@@ -174,7 +174,7 @@ nabu.formatters.markdown = {
 			if (["h1", "h2", "h3", "h4", "h5", "h6", "p"].indexOf(block.type) >= 0) {
 				// if we have a header, inject a local anchor
 				if (block.type.indexOf("h") == 0) {
-					formatted.push("<a id='" + block.content.replace(/[^\w]+/g, "-").toLowerCase() + "'/>");
+					formatted.push("<a id='" + block.linkId + "'></a>");
 				}
 				formatted.push(
 					"<" + block.type + " class='is-" + block.type + " is-variant-article'>"
@@ -207,7 +207,7 @@ nabu.formatters.markdown = {
 			else if (block.type == "ul" || block.type == "ol") {
 				// if our depth is bigger than the current list stack, we need to add some lists
 				while (block.depth > listStack.length) {
-					formatted.push("<ul class='is-list'>");
+					formatted.push("<ul class='is-list is-variant-article'>");
 					listStack.push({
 						tag: "ul",
 						supporting: true
@@ -374,9 +374,17 @@ nabu.formatters.markdown = {
 		content = content.replace(/`(.*?)`/g, "<code class='is-code is-variant-inline'>$1</code>");
 
 		// CUSTOM
+		// video embeds with classes
+		content = content.replace(/!!\[(.*?)#(.*?)\]\((.*?)\)/g, "<video alt='$1' class='is-video is-variant-article $2' controls frameborder='0' allowfullscreen><source src='$3'/></video>");
+		// video embeds with styling
+		content = content.replace(/!!\[(.*?)\?(.*?)\]\((.*?)\)/g, "<video alt='$1' class='is-video is-variant-article' style='$2' controls frameborder='0' allowfullscreen><source src='$3'/></video>");
 		// video embeds
 		content = content.replace(/!!\[(.*?)\]\((.*?)\)/g, "<video alt='$1' class='is-video is-variant-article' controls frameborder='0' allowfullscreen><source src='$2'/></video>");
 
+		// image embeds with classes
+		content = content.replace(/!\[(.*?)#(.*?)\]\((.*?)\)/g, "<img alt='$1' src='$3' class='is-image is-variant-article $2'/>");
+		// image embeds with styling
+		content = content.replace(/!\[(.*?)\?(.*?)\]\((.*?)\)/g, "<img alt='$1' style='$2' src='$3' class='is-image is-variant-article'/>");
 		// image embeds
 		content = content.replace(/!\[(.*?)\]\((.*?)\)/g, "<img alt='$1' src='$2' class='is-image is-variant-article'/>");
 
@@ -529,6 +537,9 @@ nabu.formatters.markdown = {
 			// finalize what we were working on
 			finalizeBlock();
 			blocks.push(parameters);
+			if (parameters.type.match(/^h[0-9]+$/)) {
+				parameters.linkId = parameters.content.replace(/[^\w]+/g, "-").toLowerCase();
+			}
 		}
 		var pushBlock = function(parameters, force) {
 			// there is a block of a different type ongoing
