@@ -86,7 +86,7 @@ nabu.formatters.markdown = {
 				null, 
 				/\b([\w.]+)\(/g,
 				null,
-				nabu.formatters.markdown.keywords.default,
+				nabu.formatters.markdown.keywords.default.filter(function (x) { return ["new"].indexOf(x) < 0 }),
 				parameters
 			)
 		},
@@ -111,7 +111,7 @@ nabu.formatters.markdown = {
 	keywords: {
 		css: ["!default", "!important", "@media"],
 		sql: ["select", "update", "delete", "insert", "create", "drop", "from", "where", "order by", "group by", "limit", "offset", "table", "index", "and", "or", "current_timestamp"],
-		default: ["abstract", "continue", "for", "new", "switch", "assert", "default", "goto", "package", "synchronized", "boolean", "do", "if", "private", "this", "break", "double", "implements", "protected", "throw", "byte", "else", "import", "public", "throws", "case", "enum", "instanceof", "return", "transient", "catch",
+		default: ["abstract", "null", "continue", "for", "new", "switch", "assert", "default", "goto", "package", "synchronized", "boolean", "do", "if", "private", "this", "break", "double", "implements", "protected", "throw", "byte", "else", "import", "public", "throws", "case", "enum", "instanceof", "return", "transient", "catch",
 			"extends", "int", "short", "try", "char", "final", "interface", "static", "void", "class", "finally", "long", "strictfp", "volatile", "const", "float", "native", "super", "while", "true", "false"]
 	},
 	encodeCode: function(content, singleLineRegex, multiLineRegex, methodRegex, variableRegex, keywords, parameters) {
@@ -133,14 +133,18 @@ nabu.formatters.markdown = {
 				
 		// keywords
 		if (keywords && keywords.length) {
-			content = content.replaceAll(new RegExp("(?:\\b|\\B)(" + keywords.join("|") + ")(?:\\b|\\B)", "g"), "<span class='is-code-keyword'>$1</span>");
+			content = content.replaceAll(new RegExp("(?:\\b)(" + keywords.join("|") + ")(?:\\b)", "g"), "<span class='is-code-keyword'>$1</span>");
 		}
 
 		// methods
-		content = content.replaceAll(methodRegex, "<span class='is-code-method'>$1</span>(");
+		if (methodRegex != null) {
+			content = content.replaceAll(methodRegex, "<span class='is-code-method'>$1</span>(");
+		}
 
 		// variables
-		content = content.replaceAll(variableRegex, "<span class='is-code-variable'>$1</span>");
+		if (variableRegex != null) {
+			content = content.replaceAll(variableRegex, "<span class='is-code-variable'>$1</span>");
+		}
 		
 		content = nabu.formatters.markdown.decodeComments(content, comments);
 		content = nabu.formatters.markdown.decodeStrings(content, strings);
@@ -350,7 +354,7 @@ nabu.formatters.markdown = {
 		// replace escaped with placeholders
 		content = content.replace(/\\\*/g, "::escaped-asterisk::");
 		content = content.replace(/\\_/g, "::escaped-underscore::");
-		content = content.replace(/\\+/g, "::escaped-plus::");
+		content = content.replace(/\\\+/g, "::escaped-plus::");
 		content = content.replace(/\\~/g, "::escaped-tilde::");
 		content = content.replace(/\\`/g, "::escaped-backtick::");
 		content = content.replace(/\\@/g, "::escaped-at::");
@@ -426,24 +430,43 @@ nabu.formatters.markdown = {
 		var match = null;
 		var strings = [];
 		var startIndex = 0;
+		// whether we allow linefeeds in the string or not, very few languages allow for this (actually only glue...?)
+		var allowLinefeeds = false;
+		var skipIndex = 0;
 		while (startIndex >= 0) {
 			// if we have match, find the end
 			if (match != null) {
 				index = content.indexOf(match, startIndex + 1);
-				if (index >= 0) {
-					var string = content.substring(startIndex, index + 1);
-					content = content.replace(string, "::encoded-string-" + strings.length + "::");
-					strings.push(string);
+				// if we have no match, we want to keep searching
+				if (index < 0) {
+					skipIndex = startIndex + 1;
 					match = null;
 				}
-				else {
-					break;
+				// if we don't allow linefeeds, we check that the match is not beyond a linefeed
+				if (match != null && !allowLinefeeds) {
+					// check that it is not past a linefeed
+					var linefeedIndex = content.indexOf("\n", startIndex + 1);
+					if (linefeedIndex >= 0 && linefeedIndex < index) {
+						match = null;
+						skipIndex = linefeedIndex + 1;
+					}
+				}
+				if (match != null) {
+					if (index >= 0) {
+						var string = content.substring(startIndex, index + 1);
+						content = content.replace(string, "::encoded-string-" + strings.length + "::");
+						strings.push(string);
+						match = null;
+					}
+					else {
+						break;
+					}
 				}
 			}
 			// if we don't have a match anymore, find the next string
 			if (match == null) {
-				var singleIndex = content.indexOf("'");
-				var doubleIndex = content.indexOf("\"");
+				var singleIndex = content.indexOf("'", skipIndex);
+				var doubleIndex = content.indexOf("\"", skipIndex);
 				if ((singleIndex >= 0 && doubleIndex >= 0 && singleIndex < doubleIndex) || (singleIndex >= 0 && doubleIndex < 0)) {
 					match = "'";
 					startIndex = singleIndex;

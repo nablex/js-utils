@@ -267,15 +267,16 @@ nabu.services.Router = function(parameters) {
 		
 		// this particular parent is not yet routed, check if it itself has a parent
 		if (!alreadyRouted) {
+			var grandParentEnter = parentRoute.parent != null ? self.routeParent(parentRoute.parent, parameters) : null;
 			// if we have no parent, we are assumed to route in the body
-			var anchor = parentRoute.parent != null ? self.routeParent(parentRoute.parent, parameters).anchor : "body";
+			var anchor = grandParentEnter == null ? "body" : grandParentEnter.anchor;
 			if (anchor == "body") {
 				// clear all the parents, we are starting over
 				self.parents.splice(0);
 			}
 			try {
 				// always mask parent routes
-				parentEnter = parentRoute.enter(anchor, parameters, true);
+				parentEnter = parentRoute.enter(anchor, parameters, true, grandParentEnter ? grandParentEnter.enter : null);
 				// TODO: might need to differentiate if we want the same parent but with different parameters!
 				
 				// we have a url, do some cloning shizzle...?
