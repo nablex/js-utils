@@ -51,7 +51,7 @@ nabu.services.Router = function(parameters) {
 	
 	this.parents = [];
 	this.urlRewriter = parameters.urlRewriter;
-	
+
 	window.addEventListener("popstate", function(event) {
 		var state = event.state;
 		var alias = state ? state.alias : null;
@@ -413,7 +413,20 @@ nabu.services.Router = function(parameters) {
 		}
 	};
 
+	this.sorted = false;
 	this.sort = function() {
+		// the clone used in the below got highlighted as a bottleneck in a performance review
+		// instead we only sort once, assuming the first time we actually get routes etc, all routes have been registered
+		// this small change improved performance of that particular page by 30% (it was a repeat with nested pages etc)
+		if (!this.sorted) {
+			this.sorted = true;
+			this.routes.sort(function(a, b) {
+				// lowest priority has to be sorted to the back of the array so they get picked last
+				return (typeof(b.priority) == "undefined" ? 0 : b.priority)
+					- (typeof(a.priority) == "undefined" ? 0 : a.priority);
+			});
+		}
+		return this.routes;
 		// sort the routes based on priority
 		// this allows for default routes to be defined and overwritten
 		// we clone the list because the list is generally watched
