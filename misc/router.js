@@ -360,7 +360,7 @@ nabu.services.Router = function(parameters) {
 					else {
 						url += "&";
 					}
-					url += query[i] + "=" + parameters[query[i]];
+					url += encodeURIComponent(query[i]) + "=" + encodeURIComponent(parameters[query[i]]);
 				}
 			}
 		}
