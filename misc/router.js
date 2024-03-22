@@ -130,12 +130,21 @@ nabu.services.Router = function(parameters) {
 			}
 		}
 		
+		// if we enable this feature, we will NOT redraw the parent if you route directly to it
+		// however currently we also don't remove (from the DOM) any trailing children that were previously rendered
+		// we could add that, but in other places pages also re-render if you trigger them multiple times
+		// instead, at the end, we push the page to the parent stack, allowing some reuse of parents in case you route directly to them
+		var routeDirectlyToParent = chosenRoute.defaultAnchor && false;
+		
 		var parentUrl = null;
 		var parentEnter = null;
 		// TODO: allow for async parents by having the routeParent return (optionally) a promise and wait on that to render the child
 		// if we are in need of a parent construct for this route, build it (or reuse it)
 		if (self.useParents) {
 			var parentAlias = chosenRoute.parent;
+			if (routeDirectlyToParent) {
+				parentAlias = chosenRoute.alias;
+			}
 			// if it is an initial route and we don't have a parent, we want to search for a generic initial skeleton (both for backwards compatibility and less explicit configuration)
 			// note that if we are doing a non-masked route on a bookmarkable url (so we are about to update the url), we _force_ the existence of a parent as well
 			// this to allow us to be consistent when the bookmarkable url is refreshed upon
@@ -160,6 +169,16 @@ nabu.services.Router = function(parameters) {
 				if (anchorEmpty) {
 					anchor = parentAnchor;
 				}
+				// all done!
+				if (routeDirectlyToParent) {
+					self.updateUrl(parentAlias, routeParent.url, parameters, chosenRoute.query, anchor);
+					// make sure we return a promise to be compatible even if we rendered nothing at all!
+					if (parentEnter == null) {
+						parentEnter = new nabu.utils.promise();
+						parentEnter.resolve();
+					}
+					return parentEnter;
+				}
 			}
 			// if we have no explicit parent, we need to route in the currently available parent, that means _its_ default anchor (if any)
 			else {
@@ -171,6 +190,7 @@ nabu.services.Router = function(parameters) {
 					anchor = "body";
 				}
 			}
+			
 		}
 		
 		// the chosen might set a spinner or some such
@@ -205,6 +225,24 @@ nabu.services.Router = function(parameters) {
 		else if (initial) {
 			self.updateState(chosenRoute.alias, parameters, chosenRoute.query, anchor);
 		}
+		
+		// we are ourselves a parent, push to the parent!
+		if (chosenRoute.defaultAnchor && chosenRoute.url && !chosenRoute.initial && !routeDirectlyToParent) {
+			var parentRoute = chosenRoute;
+			var calculateUrlTemplate = function(route) {
+				var url = route.url ? route.url : "";
+				if (route.parent) {
+					url = calculateUrlTemplate(self.get(route.parent)) + "/" + url
+				}
+				return url.replace(/[/]{2,}/g, "/");
+			}
+		
+			var renderedUrl = this.localizeUrl(this.templateUrl(calculateUrlTemplate(parentRoute), parameters, parentRoute.query));
+			parentRoute = nabu.utils.objects.clone(parentRoute);
+			parentRoute.renderedUrl = renderedUrl;
+			self.parents.push(parentRoute);
+		}
+		
 		self.initials.push(null);
 		return enterReturn;
 	};
@@ -250,11 +288,19 @@ nabu.services.Router = function(parameters) {
 			return null;
 		}
 		var url = calculateUrl();
+
+		var calculateUrlTemplate = function(route) {
+			var url = route.url ? route.url : "";
+			if (route.parent) {
+				url = calculateUrlTemplate(self.get(route.parent)) + "/" + url
+			}
+			return url.replace(/[/]{2,}/g, "/");
+		}
 		
 		// if we have a parent route with a url, check that it still matches the current parent that is routed, otherwise we may have to remove it
 		// for example if you have a parent url with an id in it, if the id changes the parent has to be rerendered
 		if (parentRoute.url && !parentRoute.initial) {
-			var renderedUrl = this.localizeUrl(this.templateUrl(parentRoute.url, parameters, parentRoute.query));
+			var renderedUrl = this.localizeUrl(this.templateUrl(calculateUrlTemplate(parentRoute), parameters, parentRoute.query));
 			// "unroute" so to speak
 			if (alreadyRouted && renderedUrl != url) {
 				this.parents.splice(this.parents.length - 1, 1);
@@ -268,6 +314,10 @@ nabu.services.Router = function(parameters) {
 		// this particular parent is not yet routed, check if it itself has a parent
 		if (!alreadyRouted) {
 			var grandParentEnter = parentRoute.parent != null ? self.routeParent(parentRoute.parent, parameters) : null;
+			// if we have added a grandparent, recalculate our local url
+			if (grandParentEnter) {
+				url = calculateUrl();
+			}
 			// if we have no parent, we are assumed to route in the body
 			var anchor = grandParentEnter == null ? "body" : grandParentEnter.anchor;
 			if (anchor == "body") {
