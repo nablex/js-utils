@@ -140,7 +140,14 @@ nabu.services.Router = function(parameters) {
 		var parentEnter = null;
 		// TODO: allow for async parents by having the routeParent return (optionally) a promise and wait on that to render the child
 		// if we are in need of a parent construct for this route, build it (or reuse it)
-		if (self.useParents) {
+		//if (self.useParents) {
+		// @2024-10-10: we want to be able to embed items that have a parent
+		// e.g. we have an "event list" page which has an "event skeleton" as parent which in turn has the basic "skeleton" as parent
+		// if we then have a situation where we want to quickly embed the "event list" page, we can't without rendering all the parents as well, breaking the overall page where we are embedding
+		// up until now we generally made "component" pages that had no parent and were embedded in a wrapper page
+		// however, doing this retroactively, especially for a page with a lot of query parameters and other settings which all have to be mapped to that embedded component, this quickly becomes tedious
+		// it is unclear if the current check correctly targets ONLY embeds of that nature
+		if (self.useParents && (anchorEmpty || anchor == "body")) {
 			var parentAlias = chosenRoute.parent;
 			if (routeDirectlyToParent) {
 				parentAlias = chosenRoute.alias;

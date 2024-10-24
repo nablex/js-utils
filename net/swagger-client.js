@@ -62,6 +62,9 @@ nabu.services.SwaggerClient = function(parameters) {
 					else if (response.status == 204) {
 						response = null;
 					}
+					else if (response.responseType == "blob") {
+						response = response.response;
+					}
 					// we are never (?) interested in the original XMLHTTPRequest
 					else {
 						if (!response.responseText) {
@@ -373,6 +376,20 @@ nabu.services.SwaggerClient = function(parameters) {
 		if (!operation) {
 			throw "Can not resolve operation: " + name;
 		}
+		else if (!operation.hasOwnProperty("isBinary")) {
+			var isBinary = false;
+			if (operation.responses["200"]) {
+				var response = operation.responses["200"];
+				var schema = null;
+				if (response && response.schema) {
+					schema = self.resolve(response.schema);
+					if (schema) {
+						isBinary = schema.type == "string" && schema.format == "binary";
+					}
+				}
+			}
+			operation.isBinary = isBinary;
+		}
 		if (operation.executor) {
 			return operation.executor(parameters, map);
 		}
@@ -389,6 +406,9 @@ nabu.services.SwaggerClient = function(parameters) {
 			}
 			if (parameters && parameters.$$skipRemember) {
 				executorParameters.$$skipRemember = parameters.$$skipRemember;
+			}
+			if (operation.isBinary) {
+				executorParameters.responseType = "blob";
 			}
 			return self.executor(executorParameters);
 		}

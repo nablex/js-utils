@@ -71,6 +71,10 @@ nabu.utils.ajax = function(parameters) {
 
 	var request = newXmlHttpRequest();
 
+	if (parameters.responseType) {
+		request.responseType = parameters.responseType;
+	}
+
 	if (!parameters.url) {
 		throw "Could not find url";
 	}
@@ -380,7 +384,7 @@ nabu.utils.ajax = function(parameters) {
 		request.send(parameters.data ? parameters.data : null);
 	}
 	return promise;
-}
+};
 
 nabu.utils.binary = {
 	blob: function(binaryData, contentType, sliceSize) {

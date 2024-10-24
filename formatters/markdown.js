@@ -536,6 +536,9 @@ nabu.formatters.markdown = {
 		return syntax(content, parameters);
 	},
 	parse: function(content, parameters) {
+		if (content == null) {
+			return [];
+		}
 		// if you pass in an element
 		if (content.innerHTML) {
 			content = content.innerHTML;
