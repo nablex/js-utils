@@ -87,7 +87,7 @@ nabu.services.Router = function(parameters) {
 	};
 
 	// route to a new alias
-	this.route = function(alias, parameters, anchor, mask, initial, back) {
+	this.route = function(alias, parameters, anchor, mask, initial, back, embedded) {
 		// we do it this way to preserve backwards compatibility
 		var anchorEmpty = !anchor;
 		if (!anchor) {
@@ -147,7 +147,9 @@ nabu.services.Router = function(parameters) {
 		// up until now we generally made "component" pages that had no parent and were embedded in a wrapper page
 		// however, doing this retroactively, especially for a page with a lot of query parameters and other settings which all have to be mapped to that embedded component, this quickly becomes tedious
 		// it is unclear if the current check correctly targets ONLY embeds of that nature
-		if (self.useParents && (anchorEmpty || anchor == "body")) {
+		//if (self.useParents && (anchorEmpty || anchor == "body")) {
+		// @2024-10-24: the above checks breaks the "back" button if parents have to be rebuilt!
+		if (self.useParents && !embedded) {
 			var parentAlias = chosenRoute.parent;
 			if (routeDirectlyToParent) {
 				parentAlias = chosenRoute.alias;
