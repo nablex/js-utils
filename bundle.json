@@ -41,8 +41,7 @@
 				"url": "utils/dom.js"
 			}, 
 			"dates.js": {
-				"url": "utils/dates.js",
-				"template": true
+				"url": "utils/dates.js"
 			}, 
 			"gtin.js": {
 				"url": "utils/gtin.js"
