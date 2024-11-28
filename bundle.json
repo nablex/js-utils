@@ -3,8 +3,7 @@
 	"resources": {
 		"schema": {
 			"json-schema.js": {
-				"url": "schema/json-schema.js",
-				"template": true
+				"url": "schema/json-schema.js"
 			}
 		}, 
 		"iterators": {

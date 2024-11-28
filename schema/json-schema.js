@@ -72,7 +72,7 @@ nabu.utils.schema.addAsyncValidation = function(validations, promise, mapper) {
 			}, function(error) {
 				validations.push({
 					code: "internal",
-					title: "%{validation:An error has occurred during validation}"
+					title: "%{validation::An error has occurred during validation}"
 				});
 				if (successHandler instanceof Function) {
 					successHandler(validations);
@@ -387,7 +387,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 				soft: true,
 				severity: "error",
 				code: "required",
-				title: "%{validation:The value is required}",
+				title: "%{validation::The value is required}",
 				priority: 0,
 				values: {
 					actual: false,
@@ -410,7 +410,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 		messages.push({
 			severity: "error",
 			code: "type",
-			title: "%{validation:The value '{actual}' is not a '{expected}'}",
+			title: "%{validation::The value '{actual}' is not a '{expected}'}",
 			priority: -1,
 			values: {
 				actual: value,
@@ -424,7 +424,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "minLength",
-				title: "%{validation:The value must be at least {expected} long}",
+				title: "%{validation::The value must be at least {expected} long}",
 				priority: -2,
 				values: {
 					actual: result.length,
@@ -439,7 +439,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "maxLength",
-				title: "%{validation:The value can be at most {expected} long}",
+				title: "%{validation::The value can be at most {expected} long}",
 				priority: -2,
 				values: {
 					actual: result.length,
@@ -454,7 +454,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "exactLength",
-				title: "%{validation:The value must be {expected} long}",
+				title: "%{validation::The value must be {expected} long}",
 				priority: -2,
 				values: {
 					actual: result.length,
@@ -469,7 +469,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "pattern",
-				title: patternComment ? patternComment : "%{validation:The value '{actual}' does not match the expected pattern '{expected}'}",
+				title: patternComment ? patternComment : "%{validation::The value '{actual}' does not match the expected pattern '{expected}'}",
 				priority: patternComment ? -1 : -3,
 				values: {
 					actual: result,
@@ -484,7 +484,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "maximum",
-				title: exclusiveMaximum != null ? "%{validation:The value {actual} should be smaller than {expected}}" : "%{validation:The value {actual} should be smaller than or equal to {expected}}",                
+				title: exclusiveMaximum != null ? "%{validation::The value {actual} should be smaller than {expected}}" : "%{validation::The value {actual} should be smaller than or equal to {expected}}",                
 				priority: -2,
 				values: {
 					actual: value,
@@ -500,7 +500,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "minimum",
-				title: exclusiveMinimum != null ? "%{validation:The value {actual} should be bigger than {expected}}" : "%{validation:The value {actual} should be bigger than or equal to {expected}}",
+				title: exclusiveMinimum != null ? "%{validation::The value {actual} should be bigger than {expected}}" : "%{validation::The value {actual} should be bigger than or equal to {expected}}",
 				priority: -2,
 				values: {
 					actual: value,
@@ -516,7 +516,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "enum",
-				title: "%{validation:The value {actual} does not match one of the possible values}",
+				title: "%{validation::The value {actual} does not match one of the possible values}",
 				priority: -1,
 				values: {
 					actual: value,
@@ -531,7 +531,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "maxItems",
-				title: "%{validation:There are {actual} entries, can be at most {expected}}",
+				title: "%{validation::There are {actual} entries, can be at most {expected}}",
 				priority: -2,
 				values: {
 					actual: value.length,
@@ -546,7 +546,7 @@ nabu.utils.schema.json.validate = function(definition, value, required, resolver
 			messages.push({
 				severity: "error",
 				code: "minItems",
-				title: "%{validation:There are only {actual} entries, expecting at least {expected}}",
+				title: "%{validation::There are only {actual} entries, expecting at least {expected}}",
 				priority: -2,
 				values: {
 					actual: value.length,
