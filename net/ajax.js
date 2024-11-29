@@ -180,9 +180,9 @@ nabu.utils.ajax = function(parameters) {
 	// in the future we may not want to abort the request if there are multiple promise subscribers
 	// or if the promise has already been completed
 	// in that case we should only cancel the request if all subscribers want it cancelled
-	promise.cancel = function(reason) {
+	promise.cancel(function(reason) {
 		request.abort();
-	};
+	});
 	
 	request.onreadystatechange = function() {
 		switch (request.readyState) {

@@ -21,6 +21,7 @@ nabu.utils.wait = function(promise, timeout, handler) {
 nabu.utils.promise = function(parameters) {
 	var self = this;
 	this.state = null;
+	this.cancelHandlers = [];
 	this.successHandlers = [];
 	this.errorHandlers = [];
 	this.progressHandlers = [];
@@ -140,6 +141,10 @@ nabu.utils.promise = function(parameters) {
 		if (progressHandler) {
 			self.progress(progressHandler);
 		}
+		// TODO: we need to immediately run cancel handlers if already cancelled
+		if (cancelHandler) {
+			self.cancelHandlers.push(cancelHandler);
+		}
 		return self;
 	};
 	this.map = function(mapper) {
@@ -150,11 +155,30 @@ nabu.utils.promise = function(parameters) {
 			self.mapper.push(mapper);
 		}
 	};
+	this.cancel = function(cancelHandler) {
+		this.cancelHandlers.push(cancelHandler);
+	},
+	// by cancelling a promise we simply remove all handlers
+	// note that this can not be done on an already resolved promise
+	// TODO: in the future we may want to abort the underlying asynchronous action (usually XMLHTTPRequest)
+	// TODO: we may want to update the state to indicate cancellation
+	this.abort = function(reason) {
+		if (this.state == null) {
+			this.successHandlers.splice(0);
+			this.errorHandlers.splice(0);
+			this.progressHandlers.splice(0);
+			this.stagedHandlers.splice(0);
+			this.cancelHandlers.forEach(function(handler) {
+				handler(self, reason);
+			});
+		}
+	};
 };
 nabu.utils.promises = function(promises) {
 	var self = this;
 	this.promises = promises ? promises : [];
 	this.resolution = null;
+	this.cancelHandlers = [];
 	this.successHandlers = [];
 	this.errorHandlers = [];
 	this.progressHandlers = [];
@@ -262,7 +286,7 @@ nabu.utils.promises = function(promises) {
 		}
 		return self;
 	};
-	this.then = function(successHandler, errorHandler, progressHandler) {
+	this.then = function(successHandler, errorHandler, progressHandler, cancelHandler) {
 		if (successHandler) {
 			self.success(successHandler);
 		}
@@ -272,7 +296,29 @@ nabu.utils.promises = function(promises) {
 		if (progressHandler) {
 			self.progress(progressHandler);
 		}
+		// TODO: we need to immediately run cancel handlers if already cancelled
+		if (cancelHandler) {
+			self.cancelHandlers.push(cancelHandler);
+		}
 		return self;
+	};
+	// see other promise for documentation
+	this.cancel = function(cancelHandler) {
+		this.cancelHandlers.push(cancelHandler);
+	},
+	this.abort = function(reason) {
+		if (this.state == null) {
+			this.successHandlers.splice(0);
+			this.errorHandlers.splice(0);
+			this.progressHandlers.splice(0);
+			this.cancelHandlers.forEach(function(handler) {
+				handler(self, reason);
+			});
+			// we assume you want this to bubble down, make configurable if not
+			this.promises.forEach(function(promise) {
+				promise.abort();
+			});
+		}
 	};
 	this.resolver();
 }
