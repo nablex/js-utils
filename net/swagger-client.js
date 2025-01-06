@@ -86,7 +86,10 @@ nabu.services.SwaggerClient = function(parameters) {
 						self.offlineHandler(error);
 					}
 					var requireAuthentication = error.status == 401;
-					if (self.parseError) {
+					// for blob we do not get a responseText and this errors out
+					// instead we get a response of type blob
+					// TODO: we could still parse this blob as JSON because it contains json but I will implement this as needed
+					if (self.parseError && (!parameters || parameters.responseType != "blob")) {
 						var contentType = error.getResponseHeader("Content-Type");
 						if (contentType && (contentType.indexOf("application/json") >= 0 || contentType.indexOf("application/problem+json") >= 0)) {
 							error = JSON.parse(error.responseText);
