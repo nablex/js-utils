@@ -371,6 +371,9 @@ nabu.services.SwaggerClient = function(parameters) {
 		if (parameters && parameters["$serviceContext"] && parameters["$serviceContext"] != "default") {
 			result.headers["X-Service-Context"] = parameters["$serviceContext"];
 		}
+		if (parameters && parameters["$accept"]) {
+			result.headers["Accept"] = parameters["$accept"];
+		}
 		return result;
 	};
 	
@@ -412,6 +415,9 @@ nabu.services.SwaggerClient = function(parameters) {
 			}
 			if (operation.isBinary) {
 				executorParameters.responseType = "blob";
+			}
+			else if (parameters && parameters["$responseType"]) {
+				executorParameters.responseType = parameters["$responseType"];
 			}
 			return self.executor(executorParameters);
 		}
