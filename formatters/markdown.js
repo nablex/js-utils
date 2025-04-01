@@ -211,11 +211,8 @@ nabu.formatters.markdown = {
 			else if (block.type == "ul" || block.type == "ol") {
 				// if our depth is bigger than the current list stack, we need to add some lists
 				while (block.depth > listStack.length) {
-					formatted.push("<ul class='is-list is-variant-article'>");
-					listStack.push({
-						tag: "ul",
-						supporting: true
-					});
+					formatted.push((listStack.length > 0 ? "<li>" : "") + "<ul class='is-list is-variant-article'>");
+					listStack.push("ul");
 				}
 				if (block.depth < listStack.length - 1) {
 					reduceList(listStack.length - (block.depth + 1));
@@ -350,6 +347,22 @@ nabu.formatters.markdown = {
 	formatContentAsHtml: function(content, parameters) {
 		// we currently don't encode, this allows for inline html annotating!
 		// content = nabu.formatters.markdown.formatTextAsHtml(content);
+		
+		// we don't want stuff _inside_ code quotes to get annotated, e.g. "`my_test_function`" should not have the _ be interpreted
+		var encodeCodes = [];
+		while (content.match(/``(.*?)``/)) {
+			var inlineCode = content.match(/``(.*?)``/)[0];
+			content = content.replace(inlineCode, "::encoded-inline-code-" + encodeCodes.length + "::");
+			inlineCode = inlineCode.replace(/``(.*?)``/g, "$1")
+			encodeCodes.push("<code class='is-code is-variant-inline'>" + nabu.formatters.markdown.formatTextAsHtml(inlineCode) + "</code>");
+		}
+		while (content.match(/`(.*?)`/)) {
+			var inlineCode = content.match(/`(.*?)`/)[0];
+			console.log("inline code is", inlineCode);
+			content = content.replace(inlineCode, "::encoded-inline-code-" + encodeCodes.length + "::");
+			inlineCode = inlineCode.replace(/`(.*?)`/g, "$1")
+			encodeCodes.push("<code class='is-code is-variant-inline'>" + nabu.formatters.markdown.formatTextAsHtml(inlineCode) + "</code>");
+		}
 
 		// replace escaped with placeholders
 		content = content.replace(/\\\*/g, "::escaped-asterisk::");
@@ -423,6 +436,10 @@ nabu.formatters.markdown = {
 		content = content.replace(/::escaped-at::/g, "@");
 		content = content.replace(/::escaped-hashtag::/g, "#");
 
+		encodeCodes.forEach(function(encodeCode, index) {
+			content = content.replace("::encoded-inline-code-" + index + "::", encodeCode);
+		});
+		
 		return content;
 	},
 	encodeStrings: function(content) {
@@ -941,6 +958,31 @@ nabu.formatters.markdown = {
 		}
 		// finalize whatever we had ongoing
 		finalizeBlock();
+		// normalize the depths, for instance some chat models generate an ordered list with "1. something" then include an unordered list but offset it with 3 spaces (instead of 1) to visually match with the parent list
+		// however, these depth differences can lead to a lot of unwanted list generation
+		var previousDepth = 0;
+		var depthReference = 0;
+		var depthReduction = 0;
+		blocks.forEach(function(block) {
+			// we want to update to a reference depth
+			if (depthReference > 0) {
+				if (block.depth > depthReference) {
+					block.depth -= depthReduction;
+				}
+				// if we dip below the reference point, stop rewriting
+				else if (block.depth < depthReference) {
+					depthReference = 0;
+					depthReduction = 0;
+				}
+			}
+			// if we are offset by more than 1, reduce it to 1
+			else if (block.depth > previousDepth + 1) {
+				depthReference = previousDepth + 1;
+				depthReduction = block.depth - depthReference;
+				block.depth -= depthReduction;
+			}
+			previousDepth = block.depth;
+		});
 		return blocks;
 	}
 }

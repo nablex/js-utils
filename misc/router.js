@@ -223,7 +223,32 @@ nabu.services.Router = function(parameters) {
 		}
 		// update the current URL if the state has a URL attached to it (don't update if initial, we use keep using that url)
 		if (chosenRoute.url && !mask && !initial && !back && !chosenRoute.initial) {
-			self.updateUrl(chosenRoute.alias, parentUrl == null ? chosenRoute.url : parentUrl.replace(/[/]+$/, "") + "/" + chosenRoute.url.replace(/^[/]+/, ""), parameters, chosenRoute.query, anchor);
+			// we must remove the query parameters from the parent url, otherwise they will be preprended to the child url
+			// note that we can't guarantee the child has the same query parameters so we need to readd them as well
+			// also important: this fixes the situation where you are browsing in the parent skeleton, set some query parameters, then load a child page
+			// it would go from
+			// inbox?type=c7406e441b09448889d58cba98c0c952
+			// to inbox?type=c7406e441b09448889d58cba98c0c952/detail/0966d35e233e429a9127fccc6c894d1a
+			// but we wanted: inbox/detail/0966d35e233e429a9127fccc6c894d1a?type=c7406e441b09448889d58cba98c0c952
+			// however, the problem that is not solved yet is if you are in the child and the parent wants to update the query parameters but the child is not aware of the query parameters...
+			var indexOfQueryParams = parentUrl.indexOf("?");
+			if (indexOfQueryParams >= 0) {
+				parentUrl.substring(indexOfQueryParams + 1).split("&").forEach(function(part) {
+					var parts = part.split("=");
+					// need key value to be able to set it
+					if (parts.length == 2) {
+						if (queryParameters.indexOf(parts[0]) < 0) {
+							queryParameters.push(parts[0]);
+						}
+						// if there is no value yet in parameters, set it
+						if (!parameters.hasOwnProperty(parts[0])) {
+							parameters[parts[0]] = parts[1];
+						}
+					}
+				})
+				parentUrl = parentUrl.substring(0, indexOfQueryParams);
+			}
+			self.updateUrl(chosenRoute.alias, parentUrl == null ? chosenRoute.url : parentUrl.replace(/[/]+$/, "") + "/" + chosenRoute.url.replace(/^[/]+/, ""), parameters, queryParameters, anchor);
 		}
 		// the state is already correct if initial
 		else if (!initial && !back && !chosenRoute.initial) {
