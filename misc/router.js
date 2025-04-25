@@ -223,6 +223,10 @@ nabu.services.Router = function(parameters) {
 		}
 		// update the current URL if the state has a URL attached to it (don't update if initial, we use keep using that url)
 		if (chosenRoute.url && !mask && !initial && !back && !chosenRoute.initial) {
+			var queryParameters = [];
+			if (chosenRoute.query) {
+				nabu.utils.arrays.merge(queryParameters, chosenRoute.query);
+			}
 			// we must remove the query parameters from the parent url, otherwise they will be preprended to the child url
 			// note that we can't guarantee the child has the same query parameters so we need to readd them as well
 			// also important: this fixes the situation where you are browsing in the parent skeleton, set some query parameters, then load a child page
@@ -231,7 +235,7 @@ nabu.services.Router = function(parameters) {
 			// to inbox?type=c7406e441b09448889d58cba98c0c952/detail/0966d35e233e429a9127fccc6c894d1a
 			// but we wanted: inbox/detail/0966d35e233e429a9127fccc6c894d1a?type=c7406e441b09448889d58cba98c0c952
 			// however, the problem that is not solved yet is if you are in the child and the parent wants to update the query parameters but the child is not aware of the query parameters...
-			var indexOfQueryParams = parentUrl.indexOf("?");
+			var indexOfQueryParams = parentUrl == null ? -1 : parentUrl.indexOf("?");
 			if (indexOfQueryParams >= 0) {
 				parentUrl.substring(indexOfQueryParams + 1).split("&").forEach(function(part) {
 					var parts = part.split("=");
