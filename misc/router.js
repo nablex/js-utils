@@ -67,7 +67,9 @@ nabu.services.Router = function(parameters) {
 				self.routeAll(alias, state ? state.parameters : null, anchor, false);
 			}
 			else {
-				self.route(alias, state ? state.parameters : null, anchor, true, false, true);
+				// @2025-05-13: when hitting "back", the "lastRoute" in the vue service (see application.js) is NOT updated which means page builder does not correctly highlight the states in the buttons that are based on routing
+				// it is unclear why "mask" was set to true here but it seems ok to set it to false again
+				self.route(alias, state ? state.parameters : null, anchor, false, false, true);
 			}
 		}
 	}, false);
