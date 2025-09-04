@@ -37,6 +37,40 @@ nabu.utils.dates = {
 		days.push("%{date::Sunday}");
 		return days;
 	},
+	// ytd, mtd, wtd, dtd (day to date)
+	calculatePeriod: function(period, date) {
+		var result = date ? new Date(date.getTime()) : new Date();
+		// year to date
+		if (period.toLowerCase() == "ytd") {
+			result.setDate(1);
+			result.setMonth(0);
+		}
+		// month to date
+		else if (period.toLowerCase() == "mtd") {
+			result.setDate(1);
+		}
+		// week to date
+		else if (period.toLowerCase() == "wtd") {
+			// get current day of week (0 == sunday)
+			var current = result.getDay();
+			// just no
+			if (current == 0) {
+				current = 7;
+			}
+			// we want to switch to the start of the week, if we _are_ monday, we are at the start
+			// if we are sunday, we want to jump back to monday, not the sunday before
+			current--;
+			// this should overflow cleanly
+			result.setDate(result.getDate() - current);
+		}
+		// also supported: day to date (just start of the day)
+		// always the very start of the period in question
+		result.setHours(0);
+		result.setMinutes(0);
+		result.setSeconds(0);
+		result.setMilliseconds(0);
+		return result;
+	},
 	addDuration: function(duration, date) {
 		// laziness
 		var value = duration;

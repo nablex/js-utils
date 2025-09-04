@@ -63,7 +63,17 @@ nabu.services.SwaggerClient = function(parameters) {
 						response = null;
 					}
 					else if (response.responseType == "blob") {
+						var disposition = response.getResponseHeader("Content-Disposition");
 						response = response.response;
+						// extract the filename if possible
+						if (disposition != null && disposition.indexOf("filename") >= 0) {
+							fileName = disposition.replace(/.*filename=([^;]+).*/, "$1");
+							// probably quoted
+							if (fileName.indexOf('"') == 0) {
+								fileName = fileName.substring(1, fileName.length - 1);
+							}
+							response.name = fileName;
+						}
 					}
 					// we are never (?) interested in the original XMLHTTPRequest
 					else {

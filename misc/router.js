@@ -442,7 +442,11 @@ nabu.services.Router = function(parameters) {
 			var first = true;
 			for (var i = 0; i < query.length; i++) {
 				var value = parameters[query[i]];
-				if (typeof(value) != "undefined" && value != null) {
+				// @2025-05-20 empty arrays should also not be added!
+				var skipValue = typeof(value) == "undefined"
+					|| value == null
+					|| (value instanceof Array && value.length == 0);
+				if (!skipValue) {
 					if (first) {
 						url += "?";
 						first = false;
@@ -450,7 +454,17 @@ nabu.services.Router = function(parameters) {
 					else {
 						url += "&";
 					}
-					url += encodeURIComponent(query[i]) + "=" + encodeURIComponent(parameters[query[i]]);
+					if (value instanceof Array) {
+						value.forEach(function(single, index) {
+							if (index > 0) {
+								url += "&";
+							}
+							url += encodeURIComponent(query[i]) + "=" + encodeURIComponent(single);		
+						})
+					}
+					else {
+						url += encodeURIComponent(query[i]) + "=" + encodeURIComponent(parameters[query[i]]);
+					}
 				}
 			}
 		}
@@ -624,6 +638,9 @@ nabu.services.Router = function(parameters) {
 						urlToMatch = parentUrl.replace(/[/]+$/, "") + "/" + urlToMatch.replace(/^[/]+/, "")
 					}
 					var template = "^" + urlToMatch.replace(/\{[\s]*[^}:]+[\s]*:[\s]*([^}]+)[\s]*\}/g, "($1)").replace(/\{[\s]*[^}]+[\s]*\}/g, "([^/]+)") + "$";
+					// @2025-08-21: if you have a template like /module/{moduleName}/{major}.{minor}.{patch}/content
+					// it would not correctly deduce the version parts because of the "." in between
+					template = template.replace(/\./g, "\\.");
 					var matches = path.match(template);
 					if (matches) {
 						var variables = urlToMatch.match(template);
