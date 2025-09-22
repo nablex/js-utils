@@ -67,7 +67,7 @@ nabu.services.SwaggerClient = function(parameters) {
 						response = response.response;
 						// extract the filename if possible
 						if (disposition != null && disposition.indexOf("filename") >= 0) {
-							fileName = disposition.replace(/.*filename=([^;]+).*/, "$1");
+							var fileName = disposition.replace(/.*filename=([^;]+).*/, "$1");
 							// probably quoted
 							if (fileName.indexOf('"') == 0) {
 								fileName = fileName.substring(1, fileName.length - 1);
