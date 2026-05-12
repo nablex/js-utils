@@ -128,7 +128,8 @@ nabu.utils.schema.json.format = function(definition, value, resolver) {
 			return value.toISOString();
 		}
 		// because timestamps are easier to always parse (because there is no format), it can be a quick workaround to for example storing in query parameters
-		else if (definition.format == "date-time" && !isNaN(value)) {
+		// note that isNaN(null) == isNaN(5)....
+		else if (definition.format == "date-time" && value != null && !isNaN(value)) {
 			return new Date(parseInt(value)).toISOString();
 		}
 		else if (definition.format == "time" && value instanceof Date) {
